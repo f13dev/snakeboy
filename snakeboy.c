@@ -2,7 +2,7 @@
 #include <stdio.h>   // Standard I/O for printing (e.g., score)
 #include <rand.h>    // For random number generation (food placement)
 #include <gbdk/console.h> // For console functions like gotoxy, printf
-// #include <gbdk/font.h> // Removed this include, font_init and printf usually work without it
+#include <gbdk/font.h> // Removed this include, font_init and printf usually work without it
 
 // --- Game Constants ---
 #define SCREEN_WIDTH_TILES  20  // GameBoy screen width in tiles (160 pixels / 8 pixels/tile)
@@ -92,6 +92,9 @@ const unsigned char score_str[] = "SCORE: %d";
 
 // --- Function Prototypes ---
 void init_game();
+void clear_screen();
+void menu();
+void run_game();
 void draw_game_area();
 void draw_snake();
 void draw_food();
@@ -103,8 +106,7 @@ void update_score_display();
 
 // --- Main Game Loop ---
 void main() {
-    // Initialize font system
-    font_init();
+    font_init(); // Initialize font system
 
     // Load custom tiles into VRAM
     set_bkg_data(TILE_EMPTY, 1, empty_tile);
@@ -119,6 +121,70 @@ void main() {
     // Show the background layer
     SHOW_BKG;
     DISPLAY_ON;
+
+    menu();
+}
+
+void menu() {    
+    // Seed the random number generator
+    //initrand(DIV_REG);
+
+    // Clear the screen
+    clear_screen();
+
+    // Main menu screen
+    gotoxy(6, 4);
+    printf("SNAKEBOY");
+    gotoxy(4, 6);
+    printf("Press  START");
+    gotoxy(6, 7);
+    printf("to play.");
+
+    // Hight scores
+    gotoxy(1, 10);
+    printf("AAA 9999");
+    gotoxy(1, 11);
+    printf("BBB 9999");
+    gotoxy(1, 12);
+    printf("CCC 9999");
+    gotoxy(1, 13);
+    printf("DDD 9999");
+    gotoxy(1, 14);
+    printf("EEE 9999");
+
+    gotoxy(11, 10);
+    printf("FFF 9999");
+    gotoxy(11, 11);
+    printf("GGG 9999");
+    gotoxy(11, 12);
+    printf("HHH 9999");
+    gotoxy(11, 13);
+    printf("III 9999");
+    gotoxy(11, 14);
+    printf("JJJ 9999");
+
+    // Wait for START button to be pressed
+    while (joypad() == 0) {
+        wait_vbl_done(); // Wait for VBlank to prevent screen tearing
+    }
+
+    run_game();
+}
+
+void run_game() {
+    // Load custom tiles into VRAM
+    set_bkg_data(TILE_EMPTY, 1, empty_tile);
+    set_bkg_data(TILE_SNAKE_HEAD, 1, snake_head_tile);
+    set_bkg_data(TILE_SNAKE_BODY, 1, snake_body_tile);
+    set_bkg_data(TILE_FOOD, 1, food_tile);
+    set_bkg_data(TILE_BORDER, 1, border_tile);
+
+    // Set the background palette (all tiles use this)
+    //BGP_REG = 0xE4; // 11100100 -> Color 3,2,1,0 (Black, Dark Gray, Light Gray, White)
+
+    // Show the background layer
+    //SHOW_BKG;
+    //DISPLAY_ON;
 
     // Seed the random number generator
     initrand(DIV_REG);
@@ -142,26 +208,20 @@ void main() {
 
         game_over_screen(); // Display game over message
         // Wait for user input to restart or quit
-        while (joypad() == 0) {
-            wait_vbl_done();
-        }
+        //while (joypad() == 0) {
+        //    wait_vbl_done();
+        //}
         // Small delay to prevent immediate re-start if button held
-        delay(200);
+        //delay(200);
     }
 }
 
 // --- Game Initialization ---
 void init_game(void) {
+    clear_screen();
+    
     UBYTE i;
-    UBYTE tile_empty_arr[] = {TILE_EMPTY}; // Temporary array for TILE_EMPTY
-
-    // Clear the screen with empty tiles
-    for (i = 0; i < SCREEN_WIDTH_TILES; i++) {
-        for (UBYTE j = 0; j < SCREEN_HEIGHT_TILES; j++) {
-            set_bkg_tiles(i, j, 1, 1, tile_empty_arr);
-        }
-    }
-
+    
     draw_game_area(); // Draw the borders
 
     snake_length = INITIAL_SNAKE_LENGTH;
@@ -313,10 +373,8 @@ void update_game() {
     }
 }
 
-// --- Game Over Screen ---
-void game_over_screen() {
+void clear_screen() {
     UBYTE i, j;
-    char score_str[10];
     UBYTE tile_empty_arr[] = {TILE_EMPTY}; // Temporary array for TILE_EMPTY
 
     // Clear screen
@@ -325,17 +383,52 @@ void game_over_screen() {
             set_bkg_tiles(i, j, 1, 1, tile_empty_arr);
         }
     }
+}
 
+// --- Game Over Screen ---
+void game_over_screen() {
+
+    clear_screen(); // Clear the screen before showing game over
+
+    char score_str[10];
+
+    /*
+    
+    =====GAME  OVER=====
+
+    =====Score: XXX=====
+
+    ==Press any button==
+    =====to restart.====
+
+    */
+    gotoxy(6, 6); // Move cursor to (1,1) tile position
     // Display "GAME OVER"
-    printf("\n\n\n\n     GAME OVER!\n");
+    printf("GAME OVER");
     // Display final score
-    sprintf(score_str, "   SCORE: %u", score);
-    printf("%s\n", score_str);
-    printf("\n  Press any button\n   to restart!");
+    gotoxy(6, 8);
+    sprintf(score_str, "SCORE: %u", score);
+    printf("%s", score_str);
+    gotoxy(2, 10);
+    printf("Press any button");
+    gotoxy(5, 11);
+    printf("to restart.");
 
     // Ensure text is visible
-    wait_vbl_done();
-    delay(500); // Small delay before waiting for input
+
+    // Check for any key input
+    while (joypad() == 0) {
+        wait_vbl_done(); // Wait for VBlank to prevent screen tearing
+    }
+
+    delay(200); // Small delay to prevent immediate re-start if button held
+
+    // Check if it's a new high score
+    // if it is, show name input screen
+    // and save the score
+
+    menu(); // Return to menu after game over
+    
 }
 
 // --- Update Score Display ---

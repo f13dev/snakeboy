@@ -30,9 +30,9 @@ Area                       Addr        Size        Decimal Bytes (Attributes)
      00000006  l__INITIA |    00000007  l__HEADER |    00000008  l__HEADER
      0000000C  l__GSINIT |    00000030  l__HEADER |    00000060  l__HEADER
      000000AB  l__HEADER |    00000100  l__DATA   |    00000200  s__CODE  
-     00000923  l__HOME   |    00000951  l__CODE   |    00000B51  s__HOME  
-     00001474  s__BASE   |    00001474  s__CODE_0 |    00001474  s__INITIA
-     00001474  s__LIT    |    0000147A  s__GSINIT |    00001486  s__GSFINA
+     000008FE  l__HOME   |    00000AD5  l__CODE   |    00000CD5  s__HOME  
+     000015D3  s__BASE   |    000015D3  s__CODE_0 |    000015D3  s__INITIA
+     000015D3  s__LIT    |    000015D9  s__GSINIT |    000015E5  s__GSFINA
      00002000  _rROMB0   |    00003000  _rROMB1   |    00004000  _rMBC7_SR
      00004000  _rRAMB    |    00008000  __VRAM    |    00008000  __VRAM800
      00008800  __VRAM880 |    00009000  __VRAM900 |    00009800  __SCRN0  
@@ -77,24 +77,24 @@ Hexadecimal  [32-Bits]
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
-_CODE                  00000200    00000951 =        2385. bytes (REL,CON)
+_CODE                  00000200    00000AD5 =        2773. bytes (REL,CON)
 
         Value  Global            Value  Global            Value  Global    
         -----  ------            -----  ------            -----  ------    
-     00000200  _main     |    00000296  _empty_ti |    000002A6  _snake_he
-     000002B6  _snake_bo |    000002C6  _food_til |    000002D6  _border_t
-     000002E6  _score_st |    000002F0  _init_gam |    00000373  _draw_gam
-     000003D4  _draw_sna |    00000459  _draw_foo |    00000474  _generate
-     000004C1  _handle_i |    00000502  _update_g |    00000606  _game_ove
-     000006B2  _update_s |    000006B5  __divsuch |    000006BB  __modsuch
-     000006C4  __divusch |    000006CD  __modusch |    000006D9  __divscha
-     000006DE  __modscha |    000006E5  __divsint |    000006EE  __modsint
-     000006FA  __divucha |    000006FF  __moducha |    00000706  __divuint
-     0000070F  __moduint |    0000071B  .div8     |    0000071B  .mod8    
-     00000723  .div16    |    00000723  .mod16    |    00000759  .divu8   
-     00000759  .modu8    |    0000075C  .divu16   |    0000075C  .modu16  
-     000007D3  ___printf |    00000B19  _sprintf  |    00000B38  _printf  
-     00000B4D  ___crlf  
+     00000200  _main     |    00000256  _empty_ti |    00000266  _snake_he
+     00000276  _snake_bo |    00000286  _food_til |    00000296  _border_t
+     000002A6  _score_st |    000002B0  _menu     |    00000408  _run_game
+     0000047A  _init_gam |    000004D4  _draw_gam |    00000535  _draw_sna
+     000005BA  _draw_foo |    000005D5  _generate |    00000622  _handle_i
+     00000663  _update_g |    00000767  _clear_sc |    00000791  _game_ove
+     0000083A  _update_s |    0000083D  __divsuch |    00000843  __modsuch
+     0000084C  __divusch |    00000855  __modusch |    00000861  __divscha
+     00000866  __modscha |    0000086D  __divsint |    00000876  __modsint
+     00000882  __divucha |    00000887  __moducha |    0000088E  __divuint
+     00000897  __moduint |    000008A3  .div8     |    000008A3  .mod8    
+     000008AB  .div16    |    000008AB  .mod16    |    000008E1  .divu8   
+     000008E1  .modu8    |    000008E4  .divu16   |    000008E4  .modu16  
+     0000095B  ___printf |    00000CA1  _sprintf  |    00000CC0  _printf  
 ASxxxx Linker V03.00/V05.40 + sdld,  page 4.
 Hexadecimal  [32-Bits]
 
@@ -272,37 +272,37 @@ Hexadecimal  [32-Bits]
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
-_HOME                  00000B51    00000923 =        2339. bytes (REL,CON)
+_HOME                  00000CD5    000008FE =        2302. bytes (REL,CON)
 
         Value  Global            Value  Global            Value  Global    
         -----  ------            -----  ------            -----  ------    
-     00000B51  .memset_s |    00000B5A  .memcpy_s |    00000B77  .display_
-     00000B77  _display_ |    00000B8F  _rand     |    00000B8F  _randw   
-     00000BBA  _initrand |    00000BBC  .initrand |    00000BC5  .padup   
-     00000BC5  _waitpadu |    00000BD5  .jpad     |    00000BD5  _joypad  
-     00000BFD  _waitpad  |    00000BFE  .wait_pad |    00000C05  ___sdcc_c
-     00000C06  _font_loa |    00000C0D  font_load |    00000C55  font_copy
-     00000C8B  font_set  |    00000C98  .put_char |    00000CB0  .out_char
-     00000CB6  .del_char |    00000D0C  _putchar  |    00000D15  _setchar 
-     00000D1E  _font_loa |    00000D2C  _font_set |    00000D3B  _font_ini
-     00000D5A  .cls      |    00000D5A  _cls      |    00000D7C  _gotoxy  
-     00000D87  _posx     |    00000D98  _posy     |    00000DC0  .cr_curs 
-     00000DD5  .adv_curs |    00000E31  .tmode    |    00000E4E  .tmode_ou
-     00000E57  _color    |    00000E57  _set_1bpp |    00000E66  _puts    
-     00000E8B  .drawing_ |    00000EA8  _font_ibm |    00001289  .add_LCD 
-     00001289  _add_LCD  |    0000128F  .remove_L |    0000128F  _remove_L
-     00001295  .delay    |    00001295  _delay    |    000012C1  _set_tile
-     000012C6  _set_bkg_ |    000012C6  _set_win_ |    000012CE  _set_spri
-     000012FE  _set_bkg_ |    00001312  _uitoa    |    00001321  _itoa    
-     00001330  .itoa     |    00001344  .utoa     |    000013B8  _set_bkg_
-     000013B8  _set_win_ |    000013C0  _set_spri |    00001418  .set_xy_w
-     00001421  .set_xy_b |    00001430  .set_xy_t
+     00000CD5  .memset_s |    00000CDE  .memcpy_s |    00000CFB  .display_
+     00000CFB  _display_ |    00000D13  _rand     |    00000D13  _randw   
+     00000D3E  _initrand |    00000D40  .initrand |    00000D49  _font_loa
+     00000D50  font_load |    00000D98  font_copy |    00000DCE  font_set 
+     00000DDB  .put_char |    00000DF3  .out_char |    00000DF9  .del_char
+     00000E4F  _putchar  |    00000E58  _setchar  |    00000E61  _font_loa
+     00000E6F  _font_set |    00000E7E  _font_ini |    00000E9D  .cls     
+     00000E9D  _cls      |    00000EBF  _gotoxy   |    00000ECA  _posx    
+     00000EDB  _posy     |    00000F03  .cr_curs  |    00000F18  .adv_curs
+     00000F74  .tmode    |    00000F91  .tmode_ou |    00000F9A  .padup   
+     00000F9A  _waitpadu |    00000FAA  .jpad     |    00000FAA  _joypad  
+     00000FD2  _waitpad  |    00000FD3  .wait_pad |    00000FDA  ___sdcc_c
+     00000FDB  _color    |    00000FDB  _set_1bpp |    00000FEA  .drawing_
+     00001007  _font_ibm |    000013E8  .add_LCD  |    000013E8  _add_LCD 
+     000013EE  .remove_L |    000013EE  _remove_L |    000013F4  .delay   
+     000013F4  _delay    |    00001420  _set_tile |    00001425  _set_bkg_
+     00001425  _set_win_ |    0000142D  _set_spri |    0000145D  _set_bkg_
+     00001471  _uitoa    |    00001480  _itoa     |    0000148F  .itoa    
+     000014A3  .utoa     |    00001517  _set_bkg_ |    00001517  _set_win_
+     0000151F  _set_spri |    00001577  .set_xy_w |    00001580  .set_xy_b
+     0000158F  .set_xy_t
 ASxxxx Linker V03.00/V05.40 + sdld,  page 23.
 Hexadecimal  [32-Bits]
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
-_INITIALIZER           00001474    00000006 =           6. bytes (REL,CON)
+_INITIALIZER           000015D3    00000006 =           6. bytes (REL,CON)
 
         Value  Global            Value  Global            Value  Global    
         -----  ------            -----  ------            -----  ------    
@@ -311,17 +311,17 @@ Hexadecimal  [32-Bits]
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
-_GSINIT                0000147A    0000000C =          12. bytes (REL,CON)
+_GSINIT                000015D9    0000000C =          12. bytes (REL,CON)
 
         Value  Global            Value  Global            Value  Global    
         -----  ------            -----  ------            -----  ------    
-     0000147A  gsinit   
+     000015D9  gsinit   
 ASxxxx Linker V03.00/V05.40 + sdld,  page 25.
 Hexadecimal  [32-Bits]
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
-_GSFINAL               00001486    00000001 =           1. bytes (REL,CON)
+_GSFINAL               000015E5    00000001 =           1. bytes (REL,CON)
 
         Value  Global            Value  Global            Value  Global    
         -----  ------            -----  ------            -----  ------    
@@ -386,7 +386,7 @@ _HEADER_LCD0           00000000    00000003 =           3. bytes (ABS,CON)
 Files Linked                              [ module(s) ]
 
 C:\Users\jv\Downloads\gbdk\lib/gb/crt0.o  [ Runtime ]
-C:\Users\jv\AppData\Local\Temp/lcc171880.o
+C:\Users\jv\AppData\Local\Temp/lcc360880.o
                                           [ snakeboy ]
 
 
@@ -394,6 +394,7 @@ Libraries Linked                          [ object file ]
 
 C:\Users\jv\Downloads\gbdk\lib/sm83/sm83.lib
                                           [ rand.o ]
+C:\Users\jv\Downloads\gbdk\lib/gb/gb.lib  [ font.o ]
 C:\Users\jv\Downloads\gbdk\lib/sm83/sm83.lib
                                           [ div.o ]
 C:\Users\jv\Downloads\gbdk\lib/sm83/sm83.lib
@@ -401,10 +402,7 @@ C:\Users\jv\Downloads\gbdk\lib/sm83/sm83.lib
 C:\Users\jv\Downloads\gbdk\lib/gb/gb.lib  [ pad.o ]
 C:\Users\jv\Downloads\gbdk\lib/sm83/sm83.lib
                                           [ __sdcc_call_hl.o ]
-C:\Users\jv\Downloads\gbdk\lib/gb/gb.lib  [ font.o ]
 C:\Users\jv\Downloads\gbdk\lib/gb/gb.lib  [ color.o ]
-C:\Users\jv\Downloads\gbdk\lib/sm83/sm83.lib
-                                          [ puts.o ]
 C:\Users\jv\Downloads\gbdk\lib/gb/gb.lib  [ drawing_isr.o ]
 C:\Users\jv\Downloads\gbdk\lib/gb/gb.lib  [ f_ibm_sh.o ]
 C:\Users\jv\Downloads\gbdk\lib/gb/gb.lib  [ lcd.o ]
@@ -416,7 +414,6 @@ C:\Users\jv\Downloads\gbdk\lib/gb/gb.lib  [ set_data.o ]
 C:\Users\jv\Downloads\gbdk\lib/gb/gb.lib  [ set_bk_t.o ]
 C:\Users\jv\Downloads\gbdk\lib/sm83/sm83.lib
                                           [ itoa.o ]
-C:\Users\jv\Downloads\gbdk\lib/gb/gb.lib  [ crlf.o ]
 C:\Users\jv\Downloads\gbdk\lib/gb/gb.lib  [ set_1bit_data.o ]
 C:\Users\jv\Downloads\gbdk\lib/gb/gb.lib  [ set_xy_t.o ]
 
