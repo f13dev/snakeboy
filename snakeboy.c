@@ -460,32 +460,16 @@ void game_over_screen() {
 
 // --- Update Score Display ---
 void update_score_display() {
-    return;
-    UBYTE tile_empty_arr_8[] = {TILE_EMPTY, TILE_EMPTY, TILE_EMPTY, TILE_EMPTY, TILE_EMPTY, TILE_EMPTY, TILE_EMPTY, TILE_EMPTY}; // Temporary array for 8 TILE_EMPTYs
-    gotoxy(1, 1); // Move cursor to (1,1) tile position
-    // Clear previous score display
-    set_bkg_tiles(1, 1, 8, 1, tile_empty_arr_8); // Clear the previous score display
-    
-    printf(score);
+    gotoxy(0, 0); // Move cursor to (1,1) tile position
+    printf("SCORE: %u", score); // Print the score in the top left corner
 
-    return;
-    char score_str[10];
+    gotoxy(12, 0); // Move cursor to (13,1) tile position
+    printf("SNAKEBOY"); // Print the game title in the top right corner
 
-    gotoxy(1, 1);
-    printf(score); // Print score at (2,2) tile position
-
-    //char score_str[10];
-    //UBYTE tile_empty_arr_8[] = {TILE_EMPTY, TILE_EMPTY, TILE_EMPTY, TILE_EMPTY, TILE_EMPTY, TILE_EMPTY, TILE_EMPTY, TILE_EMPTY}; // Temporary array for 8 TILE_EMPTYs
-
-    // Clear top left corner where score will be displayed
-    //set_bkg_tiles(1, 1, 8, 1, tile_empty_arr_8);
-    gotoxy(1, 1); // Move cursor to (1,1) tile position
-    //sprintf(score_str, "SCORE:%u", score);
-    // Print score at (1,1) tile position (after border)
-    // Note: printf uses character tiles, not our custom background tiles
-    // So it overwrites the background tiles where it prints.
-    // gotoxy(1, 1); // Removed gotoxy call
-    //printf(score_str);
-
-    //printf("SCORE: "); // Print score directly to the console
+    /*
+    EASY
+    NORMAL
+    BRUTAL
+    DYNAMIC
+    */
 }
