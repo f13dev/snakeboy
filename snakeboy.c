@@ -263,7 +263,7 @@ void draw_game_area() {
 
     // Top and Bottom borders
     for (x = 0; x < SCREEN_WIDTH_TILES; x++) {
-        set_bkg_tiles(x, 0, 1, 1, tile_border_arr); // Top row
+        set_bkg_tiles(x, 1, 1, 1, tile_border_arr); // Top row
         set_bkg_tiles(x, SCREEN_HEIGHT_TILES - 1, 1, 1, tile_border_arr); // Bottom row
     }
 
@@ -310,7 +310,7 @@ void generate_food() {
         collision = 0;
         // Generate random coordinates within the playable area (excluding borders)
         new_food_x = (rand() % (SCREEN_WIDTH_TILES - 2)) + 1;
-        new_food_y = (rand() % (SCREEN_HEIGHT_TILES - 2)) + 1;
+        new_food_y = (rand() % (SCREEN_HEIGHT_TILES - 3)) + 2; // Start from row 2 to avoid the top border
 
         // Check if new food position collides with snake
         for (i = 0; i < snake_length; i++) {
@@ -365,7 +365,7 @@ void update_game() {
 
     // 1. Wall Collision
     if (snake_x[0] == 0 || snake_x[0] == SCREEN_WIDTH_TILES - 1 ||
-        snake_y[0] == 0 || snake_y[0] == SCREEN_HEIGHT_TILES - 1) {
+        snake_y[0] == 1 || snake_y[0] == SCREEN_HEIGHT_TILES - 1) {
         game_over_flag = 1;
         return;
     }
