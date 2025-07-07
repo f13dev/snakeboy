@@ -1,3 +1,23 @@
+/*
+
+  ██████  ███▄    █  ▄▄▄       ██ ▄█▀▓█████  ▄▄▄▄    ▒█████ ▓██   ██▓
+▒██    ▒  ██ ▀█   █ ▒████▄     ██▄█▒ ▓█   ▀ ▓█████▄ ▒██▒  ██▒▒██  ██▒
+░ ▓██▄   ▓██  ▀█ ██▒▒██  ▀█▄  ▓███▄░ ▒███   ▒██▒ ▄██▒██░  ██▒ ▒██ ██░
+  ▒   ██▒▓██▒  ▐▌██▒░██▄▄▄▄██ ▓██ █▄ ▒▓█  ▄ ▒██░█▀  ▒██   ██░ ░ ▐██▓░
+▒██████▒▒▒██░   ▓██░ ▓█   ▓██▒▒██▒ █▄░▒████▒░▓█  ▀█▓░ ████▓▒░ ░ ██▒▓░
+▒ ▒▓▒ ▒ ░░ ▒░   ▒ ▒  ▒▒   ▓▒█░▒ ▒▒ ▓▒░░ ▒░ ░░▒▓███▀▒░ ▒░▒░▒░   ██▒▒▒ 
+░ ░▒  ░ ░░ ░░   ░ ▒░  ▒   ▒▒ ░░ ░▒ ▒░ ░ ░  ░▒░▒   ░   ░ ▒ ▒░ ▓██ ░▒░ 
+░  ░  ░     ░   ░ ░   ░   ▒   ░ ░░ ░    ░    ░    ░ ░ ░ ░ ▒  ▒ ▒ ░░  
+      ░           ░       ░  ░░  ░      ░  ░ ░          ░ ░  ░ ░     
+                                                  ░          ░ ░     
+
+    SNAKEBOY - Snake for the GameBoy
+    Author: Jim Valentine <jv@f13.dev>
+    License: MIT
+    Version: 0.1.4
+
+*/
+
 #include <gb/gb.h>   // GBDK core library
 #include <stdio.h>   // Standard I/O for printing (e.g., score)
 #include <rand.h>    // For random number generation (food placement)
@@ -7,24 +27,7 @@
 // --- Game Constants ---
 #define SCREEN_WIDTH_TILES  20  // GameBoy screen width in tiles (160 pixels / 8 pixels/tile)
 #define SCREEN_HEIGHT_TILES 18  // GameBoy screen height in tiles (144 pixels / 8 pixels/tile) - 2 rows for status/border
-
-
-/*
-
-      SNAKEBOY      
-
-    Press  START    
-      to play!
-
- AAA 9999  AAA 9999 
- BBB 9999  BBB 9999
- CCC 9999  CCC 9999
- DDD 9999  DDD 9999
- EEE 9999  EEE 9999
-
-*/
-
-#define MAX_SNAKE_LENGTH    100 // Maximum possible snake length
+#define MAX_SNAKE_LENGTH    150 // Maximum possible snake length
 #define INITIAL_SNAKE_LENGTH 3  // Starting length of the snake
 
 // Tile IDs for our simple graphics
@@ -206,6 +209,18 @@ void run_game() {
             delay(GAME_SPEED_MS);
         }
 
+        // Play death sound
+        NR52_REG = 0x80; // Enable sound
+        NR51_REG = 0x11; // Enable sound channel 1
+        NR50_REG = 0x77; // Set volume
+
+        NR10_REG = 0x1E; // Set sound frequency sweep
+        NR11_REG = 0x10; // Set sound envelope
+        NR12_REG = 0xF3; // Set sound length and volume
+        NR13_REG = 0x00; // Set sound frequency low byte
+        NR14_REG = 0x87; // Set sound frequency high byte and start sound
+
+
         game_over_screen(); // Display game over message
         // Wait for user input to restart or quit
         //while (joypad() == 0) {
@@ -366,6 +381,18 @@ void update_game() {
     // 3. Food Collision
     if (snake_x[0] == food_x && snake_y[0] == food_y) {
         score += 10; // Increase score
+
+        // Play a sound
+        NR52_REG = 0x80; // Enable sound
+        NR51_REG = 0x11; // Enable sound channel 1
+        NR50_REG = 0x77; // Set volume
+
+        NR10_REG = 0x55; // Set sound frequency sweep
+        NR11_REG = 0x10; // Set sound envelope
+        NR12_REG = 0xF3; // Set sound length and volume
+        NR13_REG = 0x00; // Set sound frequency low byte
+        NR14_REG = 0x87; // Set sound frequency high byte and start sound
+
         if (snake_length < MAX_SNAKE_LENGTH) {
             snake_length++; // Increase snake length
         }
