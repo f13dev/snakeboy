@@ -19,6 +19,7 @@
 */
 
 #include <gb/gb.h>   // GBDK core library
+#include <gb/hardware.h> // Hardware definitions for GameBoy
 #include <stdio.h>   // Standard I/O for printing (e.g., score)
 #include <rand.h>    // For random number generation (food placement)
 #include <gbdk/console.h> // For console functions like gotoxy, printf
@@ -63,18 +64,19 @@ typedef struct {
     HighScore scores[MAX_HIGHSCORES]; // Array of high scores
 } HighScoresData;
 // Initialise 10 high scores with AAA, BBB, CCC, etc.. and scores of 10, 20, 30, etc...
+// create a blank HighScoresData save_data variable for population from RAM
 HighScoresData save_data = {
     .scores = {
         {"AAA", 100},
-        {"BBB", 200},
-        {"CCC", 300},
-        {"DDD", 400},
-        {"EEE", 500},
-        {"FFF", 600},
-        {"GGG", 700},
-        {"HHH", 800},
-        {"III", 900},
-        {"JJJ", 1000}
+        {"AAA", 100},
+        {"AAA", 100},
+        {"AAA", 100},
+        {"AAA", 100},
+        {"AAA", 100},
+        {"AAA", 100},
+        {"AAA", 100},
+        {"AAA", 100},
+        {"AAA", 100},
     }
 };
 
@@ -125,6 +127,8 @@ const unsigned char border_tile[] = {
 
 const unsigned char score_str[] = "SCORE: %d";
 
+static int external_data[10];
+
 // --- Function Prototypes ---
 void init_game();
 void clear_screen();
@@ -144,6 +148,24 @@ void save_high_scores();
 // --- Main Game Loop ---
 void main() {
     font_init(); // Initialize font system    
+
+    /*
+    ENABLE_RAM_MBC5;
+    SWITCH_RAM(0); // Switch to RAM bank 0 for high scores
+    external_data[0] = 10;
+    SWITCH_ROM(1); // Switch to ROM bank 1 for game code
+    DISABLE_RAM_MBC5; // Disable RAM access for MBC5
+    */
+
+    // Write the save_data variable to RAM
+    /*
+    ENABLE_RAM_MBC5;
+    SWITCH_RAM(0); // Switch to SRAM bank for high scores
+    memcpy((void *)0xA000, &save_data, sizeof(save_data)); // Save to RAM at 0xA000
+    SWITCH_ROM(1);
+    DISABLE_RAM_MBC5; // Disable RAM access for MBC5
+    */
+
 
     // Load custom tiles into VRAM
     set_bkg_data(TILE_EMPTY, 1, empty_tile);
@@ -175,8 +197,17 @@ void menu() {
     printf("    Press  START\n");
     printf("      to play.");
 
+    //load_game();
     //save_high_scores();
     //load_high_scores();
+
+    // Load high scores from save data in RAM
+    ENABLE_RAM_MBC5;
+    SWITCH_RAM(0); // Switch to SRAM bank for high scores
+    memcpy(&save_data, (void *)0xA000, sizeof(save_data)); // Load from RAM at 0xC000
+    SWITCH_ROM(1); // Switch back to ROM bank 1 for game code
+    DISABLE_RAM_MBC5; // Disable RAM access for MBC5
+    
 
     gotoxy(0, 10);
     // foreach high score, print the name and score, ensuring the score has preceeding zeros to make it 4 digits
@@ -220,8 +251,8 @@ void menu() {
     }
 }
 
+/*
 void load_high_scores() {
-    return;
     //ENABLE_RAM;
     // Load high scores from save data
     //memcpy(&save_data, (void *)0xC000, sizeof(save_data)); // Load from RAM
@@ -234,7 +265,6 @@ void load_high_scores() {
 }
 
 void save_high_scores() {
-    return;
     ENABLE_RAM;
     SWITCH_RAM(0); // Switch to RAM bank 0
     // save the save_data to RAM
@@ -243,12 +273,17 @@ void save_high_scores() {
     // Alternatively, you can save directly to the save_data structure
     // This is useful if you want to save the high scores at the end of the game
     
+    UINT16 save_address = 0x00; // Example address
+    // create a variable to store the game state variable
+    UINT8 my_game_state_variable = 0; // Example game state variable
+    eeprom_write_byte(save_address, my_game_state_variable);
 
     //ENABLE_RAM
     // Save high scores to save data
     //memcpy((HighScoresData *)0xC000, &save_data, sizeof(save_data)); // Save to RAM at 0xC000
     //DISABLE_RAM;
 }
+*/
 
 void run_game() {
     // Load custom tiles into VRAM
