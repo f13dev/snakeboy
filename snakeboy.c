@@ -23,6 +23,7 @@
 #include <rand.h>    // For random number generation (food placement)
 #include <gbdk/console.h> // For console functions like gotoxy, printf
 #include <gbdk/font.h> // Removed this include, font_init and printf usually work without it
+#include <string.h> // For string manipulation (e.g., strcpy, strncpy)
 
 // --- Game Constants ---
 #define SCREEN_WIDTH_TILES  20  // GameBoy screen width in tiles (160 pixels / 8 pixels/tile)
@@ -45,6 +46,37 @@
 
 // Game Speed (delay between updates)
 #define GAME_SPEED_MS 150 // Milliseconds delay, lower is faster
+
+#define SRAM_BANK 1;
+// Store an array of 10 high scores, each containing a 3 letter name and a 4 digit number
+#define MAX_HIGHSCORES 10
+#define NAME_LENGTH 3 // Length of the name (3 letters)
+// Default name for high scores
+const char DEFAULT_NAME[NAME_LENGTH + 1] = "AAA"; // 3 letters
+// Structure to hold high score data
+typedef struct {
+    char name[NAME_LENGTH + 1]; // 3 letters + null terminator
+    UINT16 score;               // Score value
+} HighScore;
+// Structure to hold all high scores
+typedef struct {
+    HighScore scores[MAX_HIGHSCORES]; // Array of high scores
+} HighScoresData;
+// Initialise 10 high scores with AAA, BBB, CCC, etc.. and scores of 10, 20, 30, etc...
+HighScoresData save_data = {
+    .scores = {
+        {"AAA", 100},
+        {"BBB", 200},
+        {"CCC", 300},
+        {"DDD", 400},
+        {"EEE", 500},
+        {"FFF", 600},
+        {"GGG", 700},
+        {"HHH", 800},
+        {"III", 900},
+        {"JJJ", 1000}
+    }
+};
 
 // --- Game State Variables ---
 UBYTE snake_x[MAX_SNAKE_LENGTH]; // X coordinates of snake segments
@@ -106,10 +138,12 @@ void handle_input();
 void update_game();
 void game_over_screen();
 void update_score_display();
+void load_high_scores();
+void save_high_scores();
 
 // --- Main Game Loop ---
 void main() {
-    font_init(); // Initialize font system
+    font_init(); // Initialize font system    
 
     // Load custom tiles into VRAM
     set_bkg_data(TILE_EMPTY, 1, empty_tile);
@@ -128,7 +162,7 @@ void main() {
     menu();
 }
 
-void menu() {    
+void menu() {
     // Seed the random number generator
     //initrand(DIV_REG);
 
@@ -136,42 +170,84 @@ void menu() {
     clear_screen();
 
     // Main menu screen
-    gotoxy(6, 4);
-    printf("SNAKEBOY");
-    gotoxy(4, 6);
-    printf("Press  START");
-    gotoxy(6, 7);
-    printf("to play.");
+    gotoxy(0, 4);
+    printf("      SNAKEBOY\n");
+    printf("    Press  START\n");
+    printf("      to play.");
 
-    // Hight scores
-    gotoxy(1, 10);
-    printf("AAA 9999");
-    gotoxy(1, 11);
-    printf("BBB 9999");
-    gotoxy(1, 12);
-    printf("CCC 9999");
-    gotoxy(1, 13);
-    printf("DDD 9999");
-    gotoxy(1, 14);
-    printf("EEE 9999");
+    //save_high_scores();
+    //load_high_scores();
 
-    gotoxy(11, 10);
-    printf("FFF 9999");
-    gotoxy(11, 11);
-    printf("GGG 9999");
-    gotoxy(11, 12);
-    printf("HHH 9999");
-    gotoxy(11, 13);
-    printf("III 9999");
-    gotoxy(11, 14);
-    printf("JJJ 9999");
+    gotoxy(0, 10);
+    // foreach high score, print the name and score, ensuring the score has preceeding zeros to make it 4 digits
+    for (int i = 0; i < MAX_HIGHSCORES / 2; i++) {
+        // Print high score names and scores
+        gotoxy(10, i + 10);
+        printf(" %s %04d", save_data.scores[i + MAX_HIGHSCORES / 2].name, save_data.scores[i + MAX_HIGHSCORES / 2].score);
+        gotoxy(0, i + 10);
+        printf(" %s %04d", save_data.scores[i].name, save_data.scores[i].score);
 
-    // Wait for START button to be pressed
-    while (joypad() == 0) {
-        wait_vbl_done(); // Wait for VBlank to prevent screen tearing
+
+        //printf(" %s %05d ", save_data.scores[i].name, save_data.scores[i].score);
+        //printf(" %s %05d\n", save_data.scores[i + MAX_HIGHSCORES / 2].name, save_data.scores[i + MAX_HIGHSCORES / 2].score);
     }
 
-    run_game();
+    // High scores,
+    // All scores need to be shown as 4 digit numbers
+    // e.g., 0000, 0010, 0020, etc.
+    /*
+    gotoxy(0, 10);
+    printf(" AAA 9999  FFF 4444\n");
+    printf(" BBB 8888  GGG 3333\n");
+    printf(" CCC 7777  HHH 2222\n");
+    printf(" DDD 6666  III 1111\n");
+    printf(" EEE 5555  JJJ 0000\n");
+    */
+    while (1) {
+        if (joypad() && joypad() == J_START) {
+            run_game(); // Start the game when START is pressed
+            break; // Exit the menu loop
+        } else if (joypad() && joypad() == J_SELECT) {
+            // Handle SELECT button if needed (e.g., show options)
+            // For now, we will just clear the screen
+            clear_screen();
+            gotoxy(6, 4);
+            printf("SELECT pressed");
+            delay(1000); // Show message for a while
+        }
+
+        wait_vbl_done(); // Wait for VBlank to prevent screen tearing
+    }
+}
+
+void load_high_scores() {
+    return;
+    //ENABLE_RAM;
+    // Load high scores from save data
+    //memcpy(&save_data, (void *)0xC000, sizeof(save_data)); // Load from RAM
+    //DISABLE_RAM;
+
+    ENABLE_RAM;
+    SWITCH_RAM(0); // Switch to RAM bank 0
+    memcpy(&save_data, (void *)0xC000, sizeof(save_data)); // Load from RAM at 0xC000
+    DISABLE_RAM;
+}
+
+void save_high_scores() {
+    return;
+    ENABLE_RAM;
+    SWITCH_RAM(0); // Switch to RAM bank 0
+    // save the save_data to RAM
+    memcpy((void *)0xC000, &save_data, sizeof(save_data)); // Save to RAM at 0xC000
+    DISABLE_RAM;
+    // Alternatively, you can save directly to the save_data structure
+    // This is useful if you want to save the high scores at the end of the game
+    
+
+    //ENABLE_RAM
+    // Save high scores to save data
+    //memcpy((HighScoresData *)0xC000, &save_data, sizeof(save_data)); // Save to RAM at 0xC000
+    //DISABLE_RAM;
 }
 
 void run_game() {
@@ -436,15 +512,15 @@ void game_over_screen() {
     gotoxy(6, 8);
     sprintf(score_str, "SCORE: %u", score);
     printf("%s", score_str);
-    gotoxy(2, 10);
-    printf("Press any button");
+    gotoxy(3, 10);
+    printf("Press A button");
     gotoxy(5, 11);
     printf("to restart.");
 
     // Ensure text is visible
 
     // Check for any key input
-    while (joypad() == 0) {
+    while (joypad() != J_A) {
         wait_vbl_done(); // Wait for VBlank to prevent screen tearing
     }
 
