@@ -229,40 +229,7 @@ void menu() {
         //printf(" %s %05d\n", save_data.scores[i + MAX_HIGHSCORES / 2].name, save_data.scores[i + MAX_HIGHSCORES / 2].score);
     }
 
-    set_bkg_data(TILE_FOOD, 1, food_tile);
-    UBYTE tile_food_arr[] = {TILE_FOOD}; // Temporary array for TILE_FOOD
-    set_bkg_tiles(18, 1, 1, 1, tile_food_arr);
-    set_bkg_data(TILE_SNAKE_HEAD, 1, snake_head_tile);
-    UBYTE tile_snake_head_arr[] = {TILE_SNAKE_HEAD}; // Temporary array for TILE_SNAKE_HEAD
-    set_bkg_tiles(18, 4, 1, 1, tile_snake_head_arr);
-    set_bkg_data(TILE_SNAKE_BODY, 1, snake_body_tile);
-    UBYTE tile_snake_body_arr[] = {TILE_SNAKE_BODY}; // Temporary array for TILE_SNAKE_BODY
-    set_bkg_tiles(18, 5, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(18, 6, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(18, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(18, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(17, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(16, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(15, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(14, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(13, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(12, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(11, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(10, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(9, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(8, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(7, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(6, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(5, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(4, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(3, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(2, 7, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(2, 8, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(2, 9, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(1, 9, 1, 1, tile_snake_body_arr);
-    set_bkg_tiles(0, 9, 1, 1, tile_snake_body_arr);
-
-    
+    draw_menu_snake(); // Draw the snake graphics on the menu
 
     // High scores,
     // All scores need to be shown as 4 digit numbers
@@ -292,39 +259,30 @@ void menu() {
     }
 }
 
-/*
-void load_high_scores() {
-    //ENABLE_RAM;
-    // Load high scores from save data
-    //memcpy(&save_data, (void *)0xC000, sizeof(save_data)); // Load from RAM
-    //DISABLE_RAM;
+void draw_menu_snake() {
+    set_bkg_data(TILE_FOOD, 1, food_tile);
+    UBYTE tile_food_arr[] = {TILE_FOOD}; // Temporary array for TILE_FOOD
+    set_bkg_tiles(18, 1, 1, 1, tile_food_arr);
 
-    ENABLE_RAM;
-    SWITCH_RAM(0); // Switch to RAM bank 0
-    memcpy(&save_data, (void *)0xC000, sizeof(save_data)); // Load from RAM at 0xC000
-    DISABLE_RAM;
-}
+    set_bkg_data(TILE_SNAKE_HEAD, 1, snake_head_tile);
+    UBYTE tile_snake_head_arr[] = {TILE_SNAKE_HEAD}; // Temporary array for TILE_SNAKE_HEAD
+    set_bkg_tiles(18, 4, 1, 1, tile_snake_head_arr);
 
-void save_high_scores() {
-    ENABLE_RAM;
-    SWITCH_RAM(0); // Switch to RAM bank 0
-    // save the save_data to RAM
-    memcpy((void *)0xC000, &save_data, sizeof(save_data)); // Save to RAM at 0xC000
-    DISABLE_RAM;
-    // Alternatively, you can save directly to the save_data structure
-    // This is useful if you want to save the high scores at the end of the game
+    set_bkg_data(TILE_SNAKE_BODY, 1, snake_body_tile);
+    UBYTE tile_snake_body_arr[] = {TILE_SNAKE_BODY}; // Temporary array for TILE_SNAKE_BODY
     
-    UINT16 save_address = 0x00; // Example address
-    // create a variable to store the game state variable
-    UINT8 my_game_state_variable = 0; // Example game state variable
-    eeprom_write_byte(save_address, my_game_state_variable);
-
-    //ENABLE_RAM
-    // Save high scores to save data
-    //memcpy((HighScoresData *)0xC000, &save_data, sizeof(save_data)); // Save to RAM at 0xC000
-    //DISABLE_RAM;
+    // For i = 5, i < 8
+    for (int i = 5; i < 8; i++) {
+        set_bkg_tiles(18, i, 1, 1, tile_snake_body_arr);
+    }
+    for (int i = 17; i > 1; i--) {
+        set_bkg_tiles(i, 7, 1, 1, tile_snake_body_arr);
+    }
+    set_bkg_tiles(2, 8, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(2, 9, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(1, 9, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(0, 9, 1, 1, tile_snake_body_arr);
 }
-*/
 
 void run_game() {
     // Load custom tiles into VRAM
