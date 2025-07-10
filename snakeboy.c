@@ -68,7 +68,7 @@ typedef struct {
 // create a blank HighScoresData save_data variable for population from RAM
 HighScoresData save_data = {
     .scores = {
-        {"AAA", 100},
+        {"AAA", 200},
         {"BBB", 100},
         {"CCC", 100},
         {"DDD", 100},
@@ -79,7 +79,7 @@ HighScoresData save_data = {
         {"III", 100},
         {"JJJ", 100},
     },
-    .checksum = 80085 // Example checksum, will be recalculated later
+    .checksum = 8008 // Example checksum, will be recalculated later
 };
 
 // --- Game State Variables ---
@@ -194,10 +194,12 @@ void menu() {
     clear_screen();
 
     // Main menu screen
-    gotoxy(0, 4);
+    gotoxy(0, 3);
     printf("      SNAKEBOY\n");
     printf("    Press  START\n");
-    printf("      to play.");
+    printf("      to play.\n");
+    printf("\n");
+    //printf("====================");
 
     //load_game();
     //save_high_scores();
@@ -214,19 +216,53 @@ void menu() {
 
     load_save_data();
 
-    gotoxy(0, 10);
     // foreach high score, print the name and score, ensuring the score has preceeding zeros to make it 4 digits
     for (int i = 0; i < MAX_HIGHSCORES / 2; i++) {
         // Print high score names and scores
-        gotoxy(10, i + 10);
+        gotoxy(10, i + 11);
         printf(" %s %04d", save_data.scores[i + MAX_HIGHSCORES / 2].name, save_data.scores[i + MAX_HIGHSCORES / 2].score);
-        gotoxy(0, i + 10);
+        gotoxy(0, i + 11);
         printf(" %s %04d", save_data.scores[i].name, save_data.scores[i].score);
 
 
         //printf(" %s %05d ", save_data.scores[i].name, save_data.scores[i].score);
         //printf(" %s %05d\n", save_data.scores[i + MAX_HIGHSCORES / 2].name, save_data.scores[i + MAX_HIGHSCORES / 2].score);
     }
+
+    set_bkg_data(TILE_FOOD, 1, food_tile);
+    UBYTE tile_food_arr[] = {TILE_FOOD}; // Temporary array for TILE_FOOD
+    set_bkg_tiles(18, 1, 1, 1, tile_food_arr);
+    set_bkg_data(TILE_SNAKE_HEAD, 1, snake_head_tile);
+    UBYTE tile_snake_head_arr[] = {TILE_SNAKE_HEAD}; // Temporary array for TILE_SNAKE_HEAD
+    set_bkg_tiles(18, 4, 1, 1, tile_snake_head_arr);
+    set_bkg_data(TILE_SNAKE_BODY, 1, snake_body_tile);
+    UBYTE tile_snake_body_arr[] = {TILE_SNAKE_BODY}; // Temporary array for TILE_SNAKE_BODY
+    set_bkg_tiles(18, 5, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(18, 6, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(18, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(18, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(17, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(16, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(15, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(14, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(13, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(12, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(11, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(10, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(9, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(8, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(7, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(6, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(5, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(4, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(3, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(2, 7, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(2, 8, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(2, 9, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(1, 9, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(0, 9, 1, 1, tile_snake_body_arr);
+
+    
 
     // High scores,
     // All scores need to be shown as 4 digit numbers
@@ -603,12 +639,19 @@ void load_save_data() {
     SWITCH_ROM(1); // Switch back to ROM bank 1 for game code
     DISABLE_RAM_MBC5; // Disable RAM access for MBC5
 
-    if (temp_scores.checksum == 80085) {
-        // Copy temp_scores to current_scores
-        memcpy(&current_scores, &temp_scores, sizeof(HighScoresData));
+    // Go to the last line and print the checksum
+    gotoxy(0, 9); // Move cursor to the last line
+    
+    if (temp_scores.checksum == 8008) {
+        // Copy temp_scores to save_data
+        memcpy(&save_data, &temp_scores, sizeof(HighScoresData));
+        printf("    Saved scores    "); // Print the checksum
+
     } else {
         store_save_data(); // Save the current scores back to RAM
+        printf("   Default scores   "); // Print the checksum
     }
+    
 }
 
 void store_save_data() {
