@@ -24,3 +24,5 @@ Written in C using the GBDK (Game Boy Developer Kit)
 1. Maybe reconsider the apple sprite, it can be awkward to see on an original DMG screen, maybe keep it simple with a rounded black dot.
 
 Buy some blank carts and make up some boxes (maybe print via AliExpress)
+
+BUG: If score is 100 or over, then the high score screen does not show up!!

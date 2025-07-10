@@ -18,13 +18,13 @@
 
 */
 
-#include <gb/gb.h>   // GBDK core library
-#include <gb/hardware.h> // Hardware definitions for GameBoy
-#include <stdio.h>   // Standard I/O for printing (e.g., score)
-#include <rand.h>    // For random number generation (food placement)
-#include <gbdk/console.h> // For console functions like gotoxy, printf
-#include <gbdk/font.h> // Removed this include, font_init and printf usually work without it
-#include <string.h> // For string manipulation (e.g., strcpy, strncpy)
+#include <gb/gb.h>              // GBDK core library
+#include <gb/hardware.h>        // Hardware definitions for GameBoy
+#include <stdio.h>              // Standard I/O for printing (e.g., score)
+#include <rand.h>               // For random number generation (food placement)
+#include <gbdk/console.h>       // For console functions like gotoxy, printf
+#include <gbdk/font.h>          // Removed this include, font_init and printf usually work without it
+#include <string.h>             // For string manipulation (e.g., strcpy, strncpy)
 
 // --- Game Constants ---
 #define SCREEN_WIDTH_TILES  20  // GameBoy screen width in tiles (160 pixels / 8 pixels/tile)
@@ -37,7 +37,7 @@
 #define TILE_SNAKE_HEAD     1
 #define TILE_SNAKE_BODY     2
 #define TILE_FOOD           3
-#define TILE_BORDER         4 // A simple border tile
+#define TILE_BORDER         4
 
 // Directions
 #define DIR_UP    0
@@ -46,40 +46,44 @@
 #define DIR_RIGHT 3
 
 // Game Speed (delay between updates)
-#define GAME_SPEED_MS 150 // Milliseconds delay, lower is faster
+#define GAME_SPEED_MS 150       // Milliseconds delay, lower is faster
 
-#define SRAM_BANK 1;
-// Store an array of 10 high scores, each containing a 3 letter name and a 4 digit number
-#define MAX_HIGHSCORES 10
-#define NAME_LENGTH 3 // Length of the name (3 letters)
+// --- High Score System Constants ---
+#define SRAM_BANK 1             // SRAM bank for high scores
+#define MAX_HIGHSCORES 10       // Maximum number of high scores to store
+#define NAME_LENGTH 3           // Length of the name (3 letters)
+
 // Default name for high scores
 const char DEFAULT_NAME[NAME_LENGTH + 1] = "AAA"; // 3 letters
+
 // Structure to hold high score data
 typedef struct {
     char name[NAME_LENGTH + 1]; // 3 letters + null terminator
     UINT16 score;               // Score value
 } HighScore;
+
 // Structure to hold all high scores
 typedef struct {
     HighScore scores[MAX_HIGHSCORES]; // Array of high scores
-    UINT16 checksum; // Checksum for data integrity
+    UINT16 checksum;            // Checksum for data integrity
 } HighScoresData;
-// Initialise 10 high scores with AAA, BBB, CCC, etc.. and scores of 10, 20, 30, etc...
-// create a blank HighScoresData save_data variable for population from RAM
+
+// Default high score data, this will be loaded if the SRAM is empty or corrupted
+// The checksum is currently hard coded to 8008.
 HighScoresData save_data = {
     .scores = {
-        {"AAA", 200},
-        {"BBB", 100},
-        {"CCC", 100},
-        {"DDD", 100},
-        {"EEE", 100},
-        {"FFF", 100},
-        {"GGG", 100},
-        {"HHH", 100},
-        {"III", 100},
-        {"JJJ", 100},
+        {"AAA", 100},
+        {"BBB", 90},
+        {"CCC", 80},
+        {"DDD", 70},
+        {"EEE", 60},
+        {"FFF", 50},
+        {"GGG", 40},
+        {"HHH", 30},
+        {"III", 20},
+        {"JJJ", 10},
     },
-    .checksum = 8008 // Example checksum, will be recalculated later
+    .checksum = 8008
 };
 
 // --- Game State Variables ---
@@ -87,49 +91,37 @@ UBYTE snake_x[MAX_SNAKE_LENGTH]; // X coordinates of snake segments
 UBYTE snake_y[MAX_SNAKE_LENGTH]; // Y coordinates of snake segments
 UBYTE snake_length;              // Current length of the snake
 UBYTE snake_direction;           // Current direction of the snake
-
 UBYTE food_x, food_y;            // Food position
-
 UINT16 score;                    // Player's score
 UBYTE  game_over_flag;           // Flag to indicate game over
 
 // --- Tile Data (simple 8x8 pixel tiles) ---
-// Each byte represents 2 pixels (00 = color 0, 01 = color 1, 10 = color 2, 11 = color 3)
-// GameBoy palette is typically 0=white, 1=light gray, 2=dark gray, 3=black
-
 // Tile 0: Empty (all white)
 const unsigned char empty_tile[] = {
-    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 };
 
 // Tile 1: Snake Head (green snake head)
 const unsigned char snake_head_tile[] = {
-    0x18, 0x00, 0x3c, 0x18, 0x7e, 0x3c, 0xff, 0x7e,
-    0xff, 0x7e, 0x7e, 0x3c, 0x3c, 0x18, 0x18, 0x00
+    0x18,0x00,0x3c,0x18,0x7e,0x3c,0xff,0x7e,0xff,0x7e,0x7e,0x3c,0x3c,0x18,0x18,0x00
 };
 
 // Tile 2: Snake Body (black square with a dark gray border)
 const unsigned char snake_body_tile[] = {
-    0xff, 0x00, 0xff, 0x7e, 0xff, 0x7e, 0xff, 0x7e,
-    0xff, 0x7e, 0xff, 0x7e, 0xff, 0x7e, 0xff, 0x00
+    0xff,0x00,0xff,0x7e,0xff,0x7e,0xff,0x7e,0xff,0x7e,0xff,0x7e,0xff,0x7e,0xff,0x00
 };
 
 // Tile 3: Food (faded dot)
 const unsigned char food_tile[] = {
-    0x00, 0x00, 0x7e, 0x00, 0x42, 0x3c, 0x5a, 0x3c,
-    0x5a, 0x3c, 0x42, 0x3c, 0x7e, 0x00, 0x00, 0x00
+    0x00,0x00,0x7e,0x00,0x42,0x3c,0x5a,0x3c,0x5a,0x3c,0x42,0x3c,0x7e,0x00,0x00,0x00
 };
 
 // Tile 4: Border (solid black)
 const unsigned char border_tile[] = {
-    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
-    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF
 };
 
-const unsigned char score_str[] = "SCORE: %d";
-
-static int external_data[10];
+const unsigned char score_str[] = "SCORE: %d"; // Format string for score display
 
 // --- Function Prototypes ---
 void init_game();
@@ -146,28 +138,14 @@ void game_over_screen();
 void load_save_data();
 void store_save_data();
 void update_high_scores(UINT16 new_score, const char *new_name);
+void sort_high_scores();
+int check_if_high_score(UINT16 new_score);
+void update_score_display();
+void draw_menu_snake();
 
 // --- Main Game Loop ---
 void main() {
-    font_init(); // Initialize font system    
-
-    /*
-    ENABLE_RAM_MBC5;
-    SWITCH_RAM(0); // Switch to RAM bank 0 for high scores
-    external_data[0] = 10;
-    SWITCH_ROM(1); // Switch to ROM bank 1 for game code
-    DISABLE_RAM_MBC5; // Disable RAM access for MBC5
-    */
-
-    // Write the save_data variable to RAM
-    /*
-    ENABLE_RAM_MBC5;
-    SWITCH_RAM(0); // Switch to SRAM bank for high scores
-    memcpy((void *)0xA000, &save_data, sizeof(save_data)); // Save to RAM at 0xA000
-    SWITCH_ROM(1);
-    DISABLE_RAM_MBC5; // Disable RAM access for MBC5
-    */
-
+    font_init(); // Initialize font system
 
     // Load custom tiles into VRAM
     set_bkg_data(TILE_EMPTY, 1, empty_tile);
@@ -179,17 +157,13 @@ void main() {
     // Set the background palette (all tiles use this)
     BGP_REG = 0xE4; // 11100100 -> Color 3,2,1,0 (Black, Dark Gray, Light Gray, White)
 
-    // Show the background layer
-    SHOW_BKG;
-    DISPLAY_ON;
+    SHOW_BKG; // Show the background layer
+    DISPLAY_ON; // Turn on the display
 
-    menu();
+    menu(); // Start the game by showing the menu
 }
 
 void menu() {
-    // Seed the random number generator
-    //initrand(DIV_REG);
-
     // Clear the screen
     clear_screen();
 
@@ -199,56 +173,27 @@ void menu() {
     printf("    Press  START\n");
     printf("      to play.\n");
     printf("\n");
-    //printf("====================");
 
-    //load_game();
-    //save_high_scores();
-    //load_high_scores();
+    load_save_data(); // Load high scores from SRAM, defult if not available
 
-    // Load high scores from save data in RAM
-    /*
-    ENABLE_RAM_MBC5;
-    SWITCH_RAM(0); // Switch to SRAM bank for high scores
-    memcpy(&save_data, (void *)0xA000, sizeof(save_data)); // Load from RAM at 0xC000
-    SWITCH_ROM(1); // Switch back to ROM bank 1 for game code
-    DISABLE_RAM_MBC5; // Disable RAM access for MBC5
-    */
-
-    load_save_data();
-
-    // foreach high score, print the name and score, ensuring the score has preceeding zeros to make it 4 digits
+    // Print the high scores, two columns of 5 scores each
     for (int i = 0; i < MAX_HIGHSCORES / 2; i++) {
         // Print high score names and scores
         gotoxy(10, i + 11);
         printf(" %s %04d", save_data.scores[i + MAX_HIGHSCORES / 2].name, save_data.scores[i + MAX_HIGHSCORES / 2].score);
         gotoxy(0, i + 11);
         printf(" %s %04d", save_data.scores[i].name, save_data.scores[i].score);
-
-
-        //printf(" %s %05d ", save_data.scores[i].name, save_data.scores[i].score);
-        //printf(" %s %05d\n", save_data.scores[i + MAX_HIGHSCORES / 2].name, save_data.scores[i + MAX_HIGHSCORES / 2].score);
     }
 
     draw_menu_snake(); // Draw the snake graphics on the menu
 
-    // High scores,
-    // All scores need to be shown as 4 digit numbers
-    // e.g., 0000, 0010, 0020, etc.
-    /*
-    gotoxy(0, 10);
-    printf(" AAA 9999  FFF 4444\n");
-    printf(" BBB 8888  GGG 3333\n");
-    printf(" CCC 7777  HHH 2222\n");
-    printf(" DDD 6666  III 1111\n");
-    printf(" EEE 5555  JJJ 0000\n");
-    */
+    // Wait for user input to start the game
     while (1) {
         if (joypad() && joypad() == J_START) {
             run_game(); // Start the game when START is pressed
             break; // Exit the menu loop
         } else if (joypad() && joypad() == J_SELECT) {
-            // Handle SELECT button if needed (e.g., show options)
-            // For now, we will just clear the screen
+            // Random test code for the SELECT button
             clear_screen();
             gotoxy(6, 4);
             printf("SELECT pressed");
@@ -260,18 +205,20 @@ void menu() {
 }
 
 void draw_menu_snake() {
+    // Add a food sprite
     set_bkg_data(TILE_FOOD, 1, food_tile);
     UBYTE tile_food_arr[] = {TILE_FOOD}; // Temporary array for TILE_FOOD
     set_bkg_tiles(18, 1, 1, 1, tile_food_arr);
 
+    // Add a snake head sprite
     set_bkg_data(TILE_SNAKE_HEAD, 1, snake_head_tile);
     UBYTE tile_snake_head_arr[] = {TILE_SNAKE_HEAD}; // Temporary array for TILE_SNAKE_HEAD
     set_bkg_tiles(18, 4, 1, 1, tile_snake_head_arr);
 
+    // Add snake body segments
     set_bkg_data(TILE_SNAKE_BODY, 1, snake_body_tile);
     UBYTE tile_snake_body_arr[] = {TILE_SNAKE_BODY}; // Temporary array for TILE_SNAKE_BODY
     
-    // For i = 5, i < 8
     for (int i = 5; i < 8; i++) {
         set_bkg_tiles(18, i, 1, 1, tile_snake_body_arr);
     }
@@ -286,18 +233,11 @@ void draw_menu_snake() {
 
 void run_game() {
     // Load custom tiles into VRAM
-    set_bkg_data(TILE_EMPTY, 1, empty_tile);
-    set_bkg_data(TILE_SNAKE_HEAD, 1, snake_head_tile);
-    set_bkg_data(TILE_SNAKE_BODY, 1, snake_body_tile);
-    set_bkg_data(TILE_FOOD, 1, food_tile);
+    //set_bkg_data(TILE_EMPTY, 1, empty_tile);
+    //set_bkg_data(TILE_SNAKE_HEAD, 1, snake_head_tile);
+    //set_bkg_data(TILE_SNAKE_BODY, 1, snake_body_tile);
+    //set_bkg_data(TILE_FOOD, 1, food_tile);
     set_bkg_data(TILE_BORDER, 1, border_tile);
-
-    // Set the background palette (all tiles use this)
-    //BGP_REG = 0xE4; // 11100100 -> Color 3,2,1,0 (Black, Dark Gray, Light Gray, White)
-
-    // Show the background layer
-    //SHOW_BKG;
-    //DISPLAY_ON;
 
     // Seed the random number generator
     initrand(DIV_REG);
@@ -314,9 +254,8 @@ void run_game() {
             draw_food();
             update_score_display();
 
-            // Wait for VBlank to prevent screen tearing and control speed
-            wait_vbl_done();
-            delay(GAME_SPEED_MS);
+            wait_vbl_done(); // Wait for VBlank to prevent screen tearing
+            delay(GAME_SPEED_MS); // Control game speed
         }
 
         // Play death sound
@@ -330,18 +269,10 @@ void run_game() {
         NR13_REG = 0x00; // Set sound frequency low byte
         NR14_REG = 0x87; // Set sound frequency high byte and start sound
 
-
         game_over_screen(); // Display game over message
-        // Wait for user input to restart or quit
-        //while (joypad() == 0) {
-        //    wait_vbl_done();
-        //}
-        // Small delay to prevent immediate re-start if button held
-        //delay(200);
     }
 }
 
-// --- Game Initialization ---
 void init_game(void) {
     clear_screen();
     
@@ -366,7 +297,6 @@ void init_game(void) {
     generate_food(); // Place the first food item
 }
 
-// --- Draw Game Area (Borders) ---
 void draw_game_area() {
     UBYTE x, y;
     UBYTE tile_border_arr[] = {TILE_BORDER}; // Temporary array for TILE_BORDER
@@ -384,7 +314,6 @@ void draw_game_area() {
     }
 }
 
-// --- Drawing Functions ---
 void draw_snake() {
     UBYTE i;
     UBYTE tile_empty_arr[] = {TILE_EMPTY};     // Temporary array for TILE_EMPTY
@@ -410,7 +339,6 @@ void draw_food() {
     set_bkg_tiles(food_x, food_y, 1, 1, tile_food_arr);
 }
 
-// --- Food Generation ---
 void generate_food() {
     UBYTE new_food_x, new_food_y;
     UBYTE collision;
@@ -435,7 +363,6 @@ void generate_food() {
     food_y = new_food_y;
 }
 
-// --- Input Handling ---
 void handle_input() {
     UBYTE joy = joypad();
 
@@ -451,7 +378,6 @@ void handle_input() {
     }
 }
 
-// --- Game Logic Update ---
 void update_game() {
     UBYTE i;
     UBYTE head_x = snake_x[0];
@@ -506,6 +432,7 @@ void update_game() {
         if (snake_length < MAX_SNAKE_LENGTH) {
             snake_length++; // Increase snake length
         }
+
         generate_food(); // Generate new food
     }
 }
@@ -522,53 +449,104 @@ void clear_screen() {
     }
 }
 
-// --- Game Over Screen ---
 void game_over_screen() {
 
     clear_screen(); // Clear the screen before showing game over
 
+    int is_high_score = check_if_high_score(score); // Check if it's a new high score
+
+    // Check if it's a new high score
+    if (is_high_score == 1) {
+        gotoxy(0, 2);
+        printf("   NEW HIGH SCORE   ");
+    }        
+
     char score_str[10];
 
-    /*
-    
-    =====GAME  OVER=====
-
-    =====Score: XXX=====
-
-    ==Press any button==
-    =====to restart.====
-
-    */
     gotoxy(6, 6); // Move cursor to (1,1) tile position
-    // Display "GAME OVER"
     printf("GAME OVER");
-    // Display final score
     gotoxy(6, 8);
     sprintf(score_str, "SCORE: %u", score);
     printf("%s", score_str);
     gotoxy(3, 10);
     printf("Press A button");
-    gotoxy(5, 11);
-    printf("to restart.");
+    gotoxy(4, 11);
+    if (is_high_score == 1) {
+        printf("to  continue");
+    } else {
+        printf(" to restart.");
+    }
 
-    // Ensure text is visible
-
-    // Check for any key input
+    // Check for button A press to restart
     while (joypad() != J_A) {
         wait_vbl_done(); // Wait for VBlank to prevent screen tearing
     }
 
     delay(200); // Small delay to prevent immediate re-start if button held
 
-    // Check if it's a new high score
-    // if it is, show name input screen
-    // and save the score
-
-    menu(); // Return to menu after game over
-    
+    if (is_high_score == 1) {
+        log_high_score();
+    } else {
+        menu(); // Return to menu if not a high score
+    }    
 }
 
-// --- Update Score Display ---
+void log_high_score() {
+    clear_screen(); // Clear the screen before logging high score
+
+    // Print the score
+    gotoxy(0, 3);
+    printf("   NEW HIGH SCORE   ");
+
+    gotoxy(0, 9);
+    printf("  Score: %u", score); // Print the score
+
+    gotoxy(0, 13);
+    printf("   START  to save   ");
+    char name[NAME_LENGTH + 1]; // Buffer for name input
+    int i;
+    for (i = 0; i < NAME_LENGTH; i++) {
+        name[i] = ' '; // Initialize with spaces
+    }
+    name[NAME_LENGTH] = '\0'; // Null-terminate the string
+
+    strncpy(name, DEFAULT_NAME, NAME_LENGTH); // Copy default name to the buffer
+
+    // Wait for user input for the name
+    // Press up or down to change the character, 
+    // press left or right to move the cursor, and A to confirm
+    int cursor_pos = 0; // Cursor position in the name
+    while (1) {
+        if (joypad() & J_UP)
+            name[cursor_pos] = (name[cursor_pos] == 'Z') ? 'A' : name[cursor_pos] + 1; // Cycle through letters A-Z
+        else if (joypad() & J_DOWN)
+            name[cursor_pos] = (name[cursor_pos] == 'A') ? 'Z' : name[cursor_pos] - 1; // Cycle through letters Z-A
+        else if (joypad() & J_LEFT)
+            cursor_pos = (cursor_pos > 0) ? cursor_pos - 1 : NAME_LENGTH - 1; // Move cursor left
+        else if (joypad() & J_RIGHT)
+            cursor_pos = (cursor_pos < NAME_LENGTH - 1) ? cursor_pos + 1 : 0; // Move cursor right
+        else if (joypad() & J_START) {
+            update_high_scores(score, name); // Update high scores with the new score and name
+            menu(); // Return to the main menu after saving
+            break; // Exit the input loop
+        }
+
+        // Update the display with the current name
+        gotoxy(2, 7); // Move cursor to the line below the prompt
+        printf("Name: ");
+        for (i = 0; i < NAME_LENGTH; i++) {
+            if (i == cursor_pos) {
+                printf("[%c]", name[i]); // Highlight the current character
+            } else {
+                printf(" %c ", name[i]); // Print other characters normally
+            }
+        }
+        wait_vbl_done(); // Wait for VBlank to prevent screen tearing
+
+        delay(100); // Small delay to prevent too fast input
+    }
+}
+
 void update_score_display() {
     gotoxy(0, 0); // Move cursor to (1,1) tile position
     printf("SCORE: %u", score); // Print the score in the top left corner
@@ -604,12 +582,10 @@ void load_save_data() {
         // Copy temp_scores to save_data
         memcpy(&save_data, &temp_scores, sizeof(HighScoresData));
         printf("    Saved scores    "); // Print the checksum
-
     } else {
         store_save_data(); // Save the current scores back to RAM
         printf("   Default scores   "); // Print the checksum
     }
-    
 }
 
 void store_save_data() {
@@ -621,5 +597,40 @@ void store_save_data() {
 }
 
 void update_high_scores(UINT16 new_score, const char *new_name) {
+    // Set the last high score to the new one (the old one drops off)
+    strncpy(save_data.scores[MAX_HIGHSCORES - 1].name, new_name, NAME_LENGTH);
+    save_data.scores[MAX_HIGHSCORES - 1].name[NAME_LENGTH] = '\0'; // Ensure null termination
+    save_data.scores[MAX_HIGHSCORES - 1].score = new_score;
 
+    // Sort the high scores
+    sort_high_scores();
+
+    // Save the high scores to SRAM
+    store_save_data();
+
+    // Re-load the high scores to ensure they are up-to-date
+    load_save_data();
+}
+
+void sort_high_scores() {
+    // Sort the high scores in descending order
+    for (int i = 0; i < MAX_HIGHSCORES - 1; i++) {
+        for (int j = i + 1; j < MAX_HIGHSCORES; j++) {
+            if (save_data.scores[i].score < save_data.scores[j].score) {
+                // Swap scores
+                HighScore temp = save_data.scores[i];
+                save_data.scores[i] = save_data.scores[j];
+                save_data.scores[j] = temp;
+            }
+        }
+    }
+}
+
+int check_if_high_score(UINT16 new_score) {
+    // High scores are sorted in descending order already
+    if (new_score > save_data.scores[MAX_HIGHSCORES - 1].score) {
+        return 1; // New score is a high score
+    } else {
+        return 0; // New score is not a high score
+    }
 }
