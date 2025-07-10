@@ -62,22 +62,24 @@ typedef struct {
 // Structure to hold all high scores
 typedef struct {
     HighScore scores[MAX_HIGHSCORES]; // Array of high scores
+    UINT16 checksum; // Checksum for data integrity
 } HighScoresData;
 // Initialise 10 high scores with AAA, BBB, CCC, etc.. and scores of 10, 20, 30, etc...
 // create a blank HighScoresData save_data variable for population from RAM
 HighScoresData save_data = {
     .scores = {
         {"AAA", 100},
-        {"AAA", 100},
-        {"AAA", 100},
-        {"AAA", 100},
-        {"AAA", 100},
-        {"AAA", 100},
-        {"AAA", 100},
-        {"AAA", 100},
-        {"AAA", 100},
-        {"AAA", 100},
-    }
+        {"BBB", 100},
+        {"CCC", 100},
+        {"DDD", 100},
+        {"EEE", 100},
+        {"FFF", 100},
+        {"GGG", 100},
+        {"HHH", 100},
+        {"III", 100},
+        {"JJJ", 100},
+    },
+    .checksum = 80085 // Example checksum, will be recalculated later
 };
 
 // --- Game State Variables ---
@@ -141,9 +143,9 @@ void generate_food();
 void handle_input();
 void update_game();
 void game_over_screen();
-void update_score_display();
-void load_high_scores();
-void save_high_scores();
+void load_save_data();
+void store_save_data();
+void update_high_scores(UINT16 new_score, const char *new_name);
 
 // --- Main Game Loop ---
 void main() {
@@ -202,12 +204,15 @@ void menu() {
     //load_high_scores();
 
     // Load high scores from save data in RAM
+    /*
     ENABLE_RAM_MBC5;
     SWITCH_RAM(0); // Switch to SRAM bank for high scores
     memcpy(&save_data, (void *)0xA000, sizeof(save_data)); // Load from RAM at 0xC000
     SWITCH_ROM(1); // Switch back to ROM bank 1 for game code
     DISABLE_RAM_MBC5; // Disable RAM access for MBC5
-    
+    */
+
+    load_save_data();
 
     gotoxy(0, 10);
     // foreach high score, print the name and score, ensuring the score has preceeding zeros to make it 4 digits
@@ -583,4 +588,37 @@ void update_score_display() {
     BRUTAL
     DYNAMIC
     */
+}
+
+void load_save_data() {
+    // Create a copy of the current high scores
+    HighScoresData current_scores = save_data;
+
+    // Create a temporary HighScoresData for loading
+    HighScoresData temp_scores;
+
+    ENABLE_RAM_MBC5;
+    SWITCH_RAM(0); // Switch to SRAM bank for high scores
+    memcpy(&temp_scores, (void *)0xA000, sizeof(save_data)); // Load from RAM at 0xC000
+    SWITCH_ROM(1); // Switch back to ROM bank 1 for game code
+    DISABLE_RAM_MBC5; // Disable RAM access for MBC5
+
+    if (temp_scores.checksum == 80085) {
+        // Copy temp_scores to current_scores
+        memcpy(&current_scores, &temp_scores, sizeof(HighScoresData));
+    } else {
+        store_save_data(); // Save the current scores back to RAM
+    }
+}
+
+void store_save_data() {
+    ENABLE_RAM_MBC5;
+    SWITCH_RAM(0); // Switch to SRAM bank for high scores
+    memcpy((void *)0xA000, &save_data, sizeof(save_data)); // Save to RAM at 0xA000
+    SWITCH_ROM(1);
+    DISABLE_RAM_MBC5; // Disable RAM access for MBC5
+}
+
+void update_high_scores(UINT16 new_score, const char *new_name) {
+
 }
