@@ -19,10 +19,12 @@
 */
 
 #include <gb/gb.h>   // GBDK core library
+#include <gb/hardware.h> // Hardware definitions for GameBoy
 #include <stdio.h>   // Standard I/O for printing (e.g., score)
 #include <rand.h>    // For random number generation (food placement)
 #include <gbdk/console.h> // For console functions like gotoxy, printf
 #include <gbdk/font.h> // Removed this include, font_init and printf usually work without it
+#include <string.h> // For string manipulation (e.g., strcpy, strncpy)
 
 // --- Game Constants ---
 #define SCREEN_WIDTH_TILES  20  // GameBoy screen width in tiles (160 pixels / 8 pixels/tile)
@@ -45,6 +47,40 @@
 
 // Game Speed (delay between updates)
 #define GAME_SPEED_MS 150 // Milliseconds delay, lower is faster
+
+#define SRAM_BANK 1;
+// Store an array of 10 high scores, each containing a 3 letter name and a 4 digit number
+#define MAX_HIGHSCORES 10
+#define NAME_LENGTH 3 // Length of the name (3 letters)
+// Default name for high scores
+const char DEFAULT_NAME[NAME_LENGTH + 1] = "AAA"; // 3 letters
+// Structure to hold high score data
+typedef struct {
+    char name[NAME_LENGTH + 1]; // 3 letters + null terminator
+    UINT16 score;               // Score value
+} HighScore;
+// Structure to hold all high scores
+typedef struct {
+    HighScore scores[MAX_HIGHSCORES]; // Array of high scores
+    UINT16 checksum; // Checksum for data integrity
+} HighScoresData;
+// Initialise 10 high scores with AAA, BBB, CCC, etc.. and scores of 10, 20, 30, etc...
+// create a blank HighScoresData save_data variable for population from RAM
+HighScoresData save_data = {
+    .scores = {
+        {"AAA", 200},
+        {"BBB", 100},
+        {"CCC", 100},
+        {"DDD", 100},
+        {"EEE", 100},
+        {"FFF", 100},
+        {"GGG", 100},
+        {"HHH", 100},
+        {"III", 100},
+        {"JJJ", 100},
+    },
+    .checksum = 8008 // Example checksum, will be recalculated later
+};
 
 // --- Game State Variables ---
 UBYTE snake_x[MAX_SNAKE_LENGTH]; // X coordinates of snake segments
@@ -93,6 +129,8 @@ const unsigned char border_tile[] = {
 
 const unsigned char score_str[] = "SCORE: %d";
 
+static int external_data[10];
+
 // --- Function Prototypes ---
 void init_game();
 void clear_screen();
@@ -105,11 +143,31 @@ void generate_food();
 void handle_input();
 void update_game();
 void game_over_screen();
-void update_score_display();
+void load_save_data();
+void store_save_data();
+void update_high_scores(UINT16 new_score, const char *new_name);
 
 // --- Main Game Loop ---
 void main() {
-    font_init(); // Initialize font system
+    font_init(); // Initialize font system    
+
+    /*
+    ENABLE_RAM_MBC5;
+    SWITCH_RAM(0); // Switch to RAM bank 0 for high scores
+    external_data[0] = 10;
+    SWITCH_ROM(1); // Switch to ROM bank 1 for game code
+    DISABLE_RAM_MBC5; // Disable RAM access for MBC5
+    */
+
+    // Write the save_data variable to RAM
+    /*
+    ENABLE_RAM_MBC5;
+    SWITCH_RAM(0); // Switch to SRAM bank for high scores
+    memcpy((void *)0xA000, &save_data, sizeof(save_data)); // Save to RAM at 0xA000
+    SWITCH_ROM(1);
+    DISABLE_RAM_MBC5; // Disable RAM access for MBC5
+    */
+
 
     // Load custom tiles into VRAM
     set_bkg_data(TILE_EMPTY, 1, empty_tile);
@@ -128,7 +186,7 @@ void main() {
     menu();
 }
 
-void menu() {    
+void menu() {
     // Seed the random number generator
     //initrand(DIV_REG);
 
@@ -136,42 +194,94 @@ void menu() {
     clear_screen();
 
     // Main menu screen
-    gotoxy(6, 4);
-    printf("SNAKEBOY");
-    gotoxy(4, 6);
-    printf("Press  START");
-    gotoxy(6, 7);
-    printf("to play.");
+    gotoxy(0, 3);
+    printf("      SNAKEBOY\n");
+    printf("    Press  START\n");
+    printf("      to play.\n");
+    printf("\n");
+    //printf("====================");
 
-    // Hight scores
-    gotoxy(1, 10);
-    printf("AAA 9999");
-    gotoxy(1, 11);
-    printf("BBB 9999");
-    gotoxy(1, 12);
-    printf("CCC 9999");
-    gotoxy(1, 13);
-    printf("DDD 9999");
-    gotoxy(1, 14);
-    printf("EEE 9999");
+    //load_game();
+    //save_high_scores();
+    //load_high_scores();
 
-    gotoxy(11, 10);
-    printf("FFF 9999");
-    gotoxy(11, 11);
-    printf("GGG 9999");
-    gotoxy(11, 12);
-    printf("HHH 9999");
-    gotoxy(11, 13);
-    printf("III 9999");
-    gotoxy(11, 14);
-    printf("JJJ 9999");
+    // Load high scores from save data in RAM
+    /*
+    ENABLE_RAM_MBC5;
+    SWITCH_RAM(0); // Switch to SRAM bank for high scores
+    memcpy(&save_data, (void *)0xA000, sizeof(save_data)); // Load from RAM at 0xC000
+    SWITCH_ROM(1); // Switch back to ROM bank 1 for game code
+    DISABLE_RAM_MBC5; // Disable RAM access for MBC5
+    */
 
-    // Wait for START button to be pressed
-    while (joypad() == 0) {
-        wait_vbl_done(); // Wait for VBlank to prevent screen tearing
+    load_save_data();
+
+    // foreach high score, print the name and score, ensuring the score has preceeding zeros to make it 4 digits
+    for (int i = 0; i < MAX_HIGHSCORES / 2; i++) {
+        // Print high score names and scores
+        gotoxy(10, i + 11);
+        printf(" %s %04d", save_data.scores[i + MAX_HIGHSCORES / 2].name, save_data.scores[i + MAX_HIGHSCORES / 2].score);
+        gotoxy(0, i + 11);
+        printf(" %s %04d", save_data.scores[i].name, save_data.scores[i].score);
+
+
+        //printf(" %s %05d ", save_data.scores[i].name, save_data.scores[i].score);
+        //printf(" %s %05d\n", save_data.scores[i + MAX_HIGHSCORES / 2].name, save_data.scores[i + MAX_HIGHSCORES / 2].score);
     }
 
-    run_game();
+    draw_menu_snake(); // Draw the snake graphics on the menu
+
+    // High scores,
+    // All scores need to be shown as 4 digit numbers
+    // e.g., 0000, 0010, 0020, etc.
+    /*
+    gotoxy(0, 10);
+    printf(" AAA 9999  FFF 4444\n");
+    printf(" BBB 8888  GGG 3333\n");
+    printf(" CCC 7777  HHH 2222\n");
+    printf(" DDD 6666  III 1111\n");
+    printf(" EEE 5555  JJJ 0000\n");
+    */
+    while (1) {
+        if (joypad() && joypad() == J_START) {
+            run_game(); // Start the game when START is pressed
+            break; // Exit the menu loop
+        } else if (joypad() && joypad() == J_SELECT) {
+            // Handle SELECT button if needed (e.g., show options)
+            // For now, we will just clear the screen
+            clear_screen();
+            gotoxy(6, 4);
+            printf("SELECT pressed");
+            delay(1000); // Show message for a while
+        }
+
+        wait_vbl_done(); // Wait for VBlank to prevent screen tearing
+    }
+}
+
+void draw_menu_snake() {
+    set_bkg_data(TILE_FOOD, 1, food_tile);
+    UBYTE tile_food_arr[] = {TILE_FOOD}; // Temporary array for TILE_FOOD
+    set_bkg_tiles(18, 1, 1, 1, tile_food_arr);
+
+    set_bkg_data(TILE_SNAKE_HEAD, 1, snake_head_tile);
+    UBYTE tile_snake_head_arr[] = {TILE_SNAKE_HEAD}; // Temporary array for TILE_SNAKE_HEAD
+    set_bkg_tiles(18, 4, 1, 1, tile_snake_head_arr);
+
+    set_bkg_data(TILE_SNAKE_BODY, 1, snake_body_tile);
+    UBYTE tile_snake_body_arr[] = {TILE_SNAKE_BODY}; // Temporary array for TILE_SNAKE_BODY
+    
+    // For i = 5, i < 8
+    for (int i = 5; i < 8; i++) {
+        set_bkg_tiles(18, i, 1, 1, tile_snake_body_arr);
+    }
+    for (int i = 17; i > 1; i--) {
+        set_bkg_tiles(i, 7, 1, 1, tile_snake_body_arr);
+    }
+    set_bkg_tiles(2, 8, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(2, 9, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(1, 9, 1, 1, tile_snake_body_arr);
+    set_bkg_tiles(0, 9, 1, 1, tile_snake_body_arr);
 }
 
 void run_game() {
@@ -436,15 +546,15 @@ void game_over_screen() {
     gotoxy(6, 8);
     sprintf(score_str, "SCORE: %u", score);
     printf("%s", score_str);
-    gotoxy(2, 10);
-    printf("Press any button");
+    gotoxy(3, 10);
+    printf("Press A button");
     gotoxy(5, 11);
     printf("to restart.");
 
     // Ensure text is visible
 
     // Check for any key input
-    while (joypad() == 0) {
+    while (joypad() != J_A) {
         wait_vbl_done(); // Wait for VBlank to prevent screen tearing
     }
 
@@ -472,4 +582,44 @@ void update_score_display() {
     BRUTAL
     DYNAMIC
     */
+}
+
+void load_save_data() {
+    // Create a copy of the current high scores
+    HighScoresData current_scores = save_data;
+
+    // Create a temporary HighScoresData for loading
+    HighScoresData temp_scores;
+
+    ENABLE_RAM_MBC5;
+    SWITCH_RAM(0); // Switch to SRAM bank for high scores
+    memcpy(&temp_scores, (void *)0xA000, sizeof(save_data)); // Load from RAM at 0xC000
+    SWITCH_ROM(1); // Switch back to ROM bank 1 for game code
+    DISABLE_RAM_MBC5; // Disable RAM access for MBC5
+
+    // Go to the last line and print the checksum
+    gotoxy(0, 9); // Move cursor to the last line
+    
+    if (temp_scores.checksum == 8008) {
+        // Copy temp_scores to save_data
+        memcpy(&save_data, &temp_scores, sizeof(HighScoresData));
+        printf("    Saved scores    "); // Print the checksum
+
+    } else {
+        store_save_data(); // Save the current scores back to RAM
+        printf("   Default scores   "); // Print the checksum
+    }
+    
+}
+
+void store_save_data() {
+    ENABLE_RAM_MBC5;
+    SWITCH_RAM(0); // Switch to SRAM bank for high scores
+    memcpy((void *)0xA000, &save_data, sizeof(save_data)); // Save to RAM at 0xA000
+    SWITCH_ROM(1);
+    DISABLE_RAM_MBC5; // Disable RAM access for MBC5
+}
+
+void update_high_scores(UINT16 new_score, const char *new_name) {
+
 }
