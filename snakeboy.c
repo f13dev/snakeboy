@@ -46,7 +46,8 @@
 #define DIR_RIGHT 3
 
 // Game Speed (delay between updates)
-#define GAME_SPEED_MS 150       // Milliseconds delay, lower is faster
+// This is no longer used as we are using frame counting to control speed
+//#define GAME_SPEED_MS 150       // Milliseconds delay, lower is faster
 
 // --- High Score System Constants ---
 #define SRAM_BANK 1             // SRAM bank for high scores
@@ -86,6 +87,8 @@ HighScoresData save_data = {
     .checksum = 8008
 };
 
+UBYTE game_frames;  // Frame counter for game speed control
+
 // --- Game State Variables ---
 UBYTE snake_x[MAX_SNAKE_LENGTH]; // X coordinates of snake segments
 UBYTE snake_y[MAX_SNAKE_LENGTH]; // Y coordinates of snake segments
@@ -94,6 +97,7 @@ UBYTE snake_direction;           // Current direction of the snake
 UBYTE food_x, food_y;            // Food position
 UINT16 score;                    // Player's score
 UBYTE  game_over_flag;           // Flag to indicate game over
+
 
 // --- Tile Data (simple 8x8 pixel tiles) ---
 // Tile 0: Empty (all white)
@@ -124,24 +128,25 @@ const unsigned char border_tile[] = {
 const unsigned char score_str[] = "SCORE: %d"; // Format string for score display
 
 // --- Function Prototypes ---
-void init_game();
+int check_if_high_score(UINT16 new_score);
 void clear_screen();
-void menu();
-void run_game();
-void draw_game_area();
-void draw_snake();
 void draw_food();
+void draw_game_area();
+void draw_menu_snake();
+void draw_snake();
+void game_over_screen();
 void generate_food();
 void handle_input();
-void update_game();
-void game_over_screen();
+void init_game();
 void load_save_data();
-void store_save_data();
-void update_high_scores(UINT16 new_score, const char *new_name);
+void log_high_score();
+void menu();
+void run_game();
 void sort_high_scores();
-int check_if_high_score(UINT16 new_score);
+void store_save_data();
+void update_game();
+void update_high_scores(UINT16 new_score, const char *new_name);
 void update_score_display();
-void draw_menu_snake();
 
 // --- Main Game Loop ---
 void main() {
@@ -189,15 +194,17 @@ void menu() {
 
     // Wait for user input to start the game
     while (1) {
-        if (joypad() && joypad() == J_START) {
+        // store the joypad state
+        UBYTE joy = joypad();
+        if (joy && joy == J_START) {
             run_game(); // Start the game when START is pressed
             break; // Exit the menu loop
-        } else if (joypad() && joypad() == J_SELECT) {
+        } else if (joy && joy == J_SELECT) {
             // Random test code for the SELECT button
             clear_screen();
             gotoxy(6, 4);
             printf("SELECT pressed");
-            delay(1000); // Show message for a while
+            //delay(1000); // Show message for a while
         }
 
         wait_vbl_done(); // Wait for VBlank to prevent screen tearing
@@ -233,14 +240,12 @@ void draw_menu_snake() {
 
 void run_game() {
     // Load custom tiles into VRAM
-    //set_bkg_data(TILE_EMPTY, 1, empty_tile);
-    //set_bkg_data(TILE_SNAKE_HEAD, 1, snake_head_tile);
-    //set_bkg_data(TILE_SNAKE_BODY, 1, snake_body_tile);
-    //set_bkg_data(TILE_FOOD, 1, food_tile);
     set_bkg_data(TILE_BORDER, 1, border_tile);
 
     // Seed the random number generator
     initrand(DIV_REG);
+
+    int frame = 0;
 
     // Game loop
     while (1) {
@@ -248,14 +253,24 @@ void run_game() {
 
         // Main game play loop
         while (!game_over_flag) {
+
+            frame++;
+
+            // Do this outside of the frame check to ensure the input is handled
+            // instantly, reducing input lag
             handle_input();
-            update_game();
-            draw_snake();
-            draw_food();
-            update_score_display();
+
+            if (frame == 10) {
+                frame = 0;
+            
+                update_game();
+                draw_snake();
+                draw_food();
+                update_score_display();
+            }
 
             wait_vbl_done(); // Wait for VBlank to prevent screen tearing
-            delay(GAME_SPEED_MS); // Control game speed
+            //delay(GAME_SPEED_MS); // Control game speed
         }
 
         // Play death sound
@@ -459,6 +474,8 @@ void game_over_screen() {
     if (is_high_score == 1) {
         gotoxy(0, 2);
         printf("   NEW HIGH SCORE   ");
+        log_high_score();
+        return;
     }        
 
     char score_str[10];
@@ -517,15 +534,17 @@ void log_high_score() {
     // press left or right to move the cursor, and A to confirm
     int cursor_pos = 0; // Cursor position in the name
     while (1) {
-        if (joypad() & J_UP)
+        // store the joypad state
+        UBYTE joy = joypad();
+        if (joy & J_UP)
             name[cursor_pos] = (name[cursor_pos] == 'Z') ? 'A' : name[cursor_pos] + 1; // Cycle through letters A-Z
-        else if (joypad() & J_DOWN)
+        else if (joy & J_DOWN)
             name[cursor_pos] = (name[cursor_pos] == 'A') ? 'Z' : name[cursor_pos] - 1; // Cycle through letters Z-A
-        else if (joypad() & J_LEFT)
+        else if (joy & J_LEFT)
             cursor_pos = (cursor_pos > 0) ? cursor_pos - 1 : NAME_LENGTH - 1; // Move cursor left
-        else if (joypad() & J_RIGHT)
+        else if (joy & J_RIGHT)
             cursor_pos = (cursor_pos < NAME_LENGTH - 1) ? cursor_pos + 1 : 0; // Move cursor right
-        else if (joypad() & J_START) {
+        else if (joy & J_START) {
             update_high_scores(score, name); // Update high scores with the new score and name
             menu(); // Return to the main menu after saving
             break; // Exit the input loop
@@ -543,7 +562,7 @@ void log_high_score() {
         }
         wait_vbl_done(); // Wait for VBlank to prevent screen tearing
 
-        delay(100); // Small delay to prevent too fast input
+        delay(50); // Small delay to prevent too fast input
     }
 }
 
@@ -581,7 +600,7 @@ void load_save_data() {
     if (temp_scores.checksum == 8008) {
         // Copy temp_scores to save_data
         memcpy(&save_data, &temp_scores, sizeof(HighScoresData));
-        printf("    Saved scores    "); // Print the checksum
+        printf("    High scores"); // Print the checksum
     } else {
         store_save_data(); // Save the current scores back to RAM
         printf("   Default scores   "); // Print the checksum
