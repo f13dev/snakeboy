@@ -14,7 +14,7 @@
     SNAKEBOY - Snake for the GameBoy
     Author: Jim Valentine <jv@f13.dev>
     License: MIT
-    Version: 0.1.4
+    Version: 0.1.5
 
 */
 
