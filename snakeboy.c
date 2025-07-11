@@ -87,7 +87,15 @@ HighScoresData save_data = {
     .checksum = 8008
 };
 
-UBYTE game_frames;  // Frame counter for game speed control
+UBYTE game_frames_easy = 13;
+UBYTE score_increment_easy = 5; // Score increment for easy mode
+UBYTE game_frames_normal = 9;
+UBYTE score_increment_normal = 10; // Score increment for normal mode
+UBYTE game_frames_hard = 6;
+UBYTE score_increment_hard = 15; // Score increment for hard mode
+
+UBYTE game_frames = 6;     // Frame counter for game speed control
+UBYTE score_increment = 10; // Score increment when eating food
 
 // --- Game State Variables ---
 UBYTE snake_x[MAX_SNAKE_LENGTH]; // X coordinates of snake segments
@@ -147,6 +155,9 @@ void store_save_data();
 void update_game();
 void update_high_scores(UINT16 new_score, const char *new_name);
 void update_score_display();
+void set_game_mode();
+void set_game_speed(UBYTE game_mode);
+void draw_game_modes(UBYTE game_mode);
 
 // --- Main Game Loop ---
 void main() {
@@ -197,7 +208,9 @@ void menu() {
         // store the joypad state
         UBYTE joy = joypad();
         if (joy && joy == J_START) {
-            run_game(); // Start the game when START is pressed
+            //run_game(); // Start the game when START is pressed
+            waitpadup();
+            set_game_mode();
             break; // Exit the menu loop
         } else if (joy && joy == J_SELECT) {
             // Random test code for the SELECT button
@@ -208,6 +221,81 @@ void menu() {
         }
 
         wait_vbl_done(); // Wait for VBlank to prevent screen tearing
+    }
+}
+
+void draw_game_modes(UBYTE game_mode) {
+    gotoxy(0, 7);
+    if (game_mode == 0) {
+        printf("      [ Easy ]      ");
+    } else {
+        printf("        Easy        ");
+    }
+
+    gotoxy(0, 8);
+    if (game_mode == 1) {
+        printf("     [ Normal ]     ");
+    } else {
+        printf("       Normal       ");
+    }
+
+    gotoxy(0, 9);
+    if (game_mode == 2) {
+        printf("     [  Hard ]      ");
+    } else {
+        printf("        Hard        ");
+    }
+}
+
+void set_game_speed(UBYTE game_mode) {
+    switch (game_mode) {
+        case 0: // Easy
+            game_frames = game_frames_easy;
+            score_increment = score_increment_easy;
+            break;
+        case 1: // Normal
+            game_frames = game_frames_normal;
+            score_increment = score_increment_normal;
+            break;
+        case 2: // Hard
+            game_frames = game_frames_hard;
+            score_increment = score_increment_hard;
+            break;
+        default:
+            game_frames = game_frames_easy; // Default to easy if invalid mode
+            score_increment = score_increment_easy;
+    }
+}
+
+void set_game_mode() {
+    // Menu screen showing Easy, Normal, Hard
+    // Show 3 options for game speed, up and down to select and A to start
+    clear_screen();
+    gotoxy(0, 5);
+    printf("  Select Game Mode  ");
+    gotoxy(0, 12);
+    printf("    Press  START    ");
+
+    UBYTE game_mode = 1; // 0: Easy, 1: Normal, 2: Hard
+    
+    while(1) {
+        UBYTE joy = joypad();
+        if (joy & J_UP) {
+            if (game_mode > 0) {
+                game_mode--; // Move up in the menu
+                waitpadup();
+            }
+        } else if (joy & J_DOWN) {
+            if (game_mode < 2) {
+                game_mode++; // Move down in the menu
+                waitpadup();
+            }
+        } else if (joy & J_START) {
+            set_game_speed(game_mode); // Set the game mode based on selection
+            run_game(); // Start the game
+        }
+
+        draw_game_modes(game_mode); // Redraw the game modes
     }
 }
 
@@ -260,7 +348,7 @@ void run_game() {
             // instantly, reducing input lag
             handle_input();
 
-            if (frame == 10) {
+            if (frame == game_frames) {
                 frame = 0;
             
                 update_game();
@@ -431,7 +519,7 @@ void update_game() {
 
     // 3. Food Collision
     if (snake_x[0] == food_x && snake_y[0] == food_y) {
-        score += 10; // Increase score
+        score += score_increment; // Increase score
 
         // Play a sound
         NR52_REG = 0x80; // Enable sound
@@ -499,7 +587,7 @@ void game_over_screen() {
         wait_vbl_done(); // Wait for VBlank to prevent screen tearing
     }
 
-    delay(200); // Small delay to prevent immediate re-start if button held
+    waitpadup(); // Wait for button release
 
     if (is_high_score == 1) {
         log_high_score();
@@ -562,7 +650,7 @@ void log_high_score() {
         }
         wait_vbl_done(); // Wait for VBlank to prevent screen tearing
 
-        delay(50); // Small delay to prevent too fast input
+        delay(100); // Small delay to prevent too fast input
     }
 }
 
@@ -572,13 +660,6 @@ void update_score_display() {
 
     gotoxy(12, 0); // Move cursor to (13,1) tile position
     printf("SNAKEBOY"); // Print the game title in the top right corner
-
-    /*
-    EASY
-    NORMAL
-    BRUTAL
-    DYNAMIC
-    */
 }
 
 void load_save_data() {
