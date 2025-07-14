@@ -73,15 +73,15 @@ typedef struct {
 // The checksum is currently hard coded to 8008.
 HighScoresData save_data = {
     .scores = {
-        {"AAA", 100},
-        {"BBB", 90},
-        {"CCC", 80},
-        {"DDD", 70},
-        {"EEE", 60},
-        {"FFF", 50},
-        {"GGG", 40},
-        {"HHH", 30},
-        {"III", 20},
+        {"AAA", 10},
+        {"BBB", 10},
+        {"CCC", 10},
+        {"DDD", 10},
+        {"EEE", 10},
+        {"FFF", 10},
+        {"GGG", 10},
+        {"HHH", 10},
+        {"III", 10},
         {"JJJ", 10},
     },
     .checksum = 8008
@@ -125,7 +125,7 @@ const unsigned char snake_body_tile[] = {
 
 // Tile 3: Food (faded dot)
 const unsigned char food_tile[] = {
-    0x00,0x00,0x7e,0x00,0x42,0x3c,0x5a,0x3c,0x5a,0x3c,0x42,0x3c,0x7e,0x00,0x00,0x00
+    0x00,0x18,0x00,0x10,0x66,0x6e,0xff,0xff,0xff,0xff,0xff,0xff,0x7e,0x7e,0x3c,0x3c
 };
 
 // Tile 4: Border (solid black)
@@ -334,6 +334,7 @@ void run_game() {
     initrand(DIV_REG);
 
     int frame = 0;
+    int reduction_frame = 0;
 
     // Game loop
     while (1) {
@@ -343,10 +344,18 @@ void run_game() {
         while (!game_over_flag) {
 
             frame++;
+            reduction_frame++;
 
             // Do this outside of the frame check to ensure the input is handled
             // instantly, reducing input lag
             handle_input();
+
+            if (reduction_frame == 60) {
+                reduction_frame = 0;
+                if (score > 0) {
+                    score--;
+                }
+            }
 
             if (frame == game_frames) {
                 frame = 0;
