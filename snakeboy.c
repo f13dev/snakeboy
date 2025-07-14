@@ -89,13 +89,17 @@ HighScoresData save_data = {
 
 UBYTE game_frames_easy = 13;
 UBYTE score_increment_easy = 5; // Score increment for easy mode
+UBYTE reduction_frame_easy = 120; // Frame reduction for easy mode
 UBYTE game_frames_normal = 9;
 UBYTE score_increment_normal = 10; // Score increment for normal mode
+UBYTE reduction_frame_normal = 60; // Frame reduction for normal mode
 UBYTE game_frames_hard = 6;
 UBYTE score_increment_hard = 15; // Score increment for hard mode
+UBYTE reduction_frame_hard = 40; // Frame reduction for hard mode
 
 UBYTE game_frames = 6;     // Frame counter for game speed control
 UBYTE score_increment = 10; // Score increment when eating food
+UBYTE reduction_frame = 0; // Frame counter for score reduction
 
 // --- Game State Variables ---
 UBYTE snake_x[MAX_SNAKE_LENGTH]; // X coordinates of snake segments
@@ -252,18 +256,22 @@ void set_game_speed(UBYTE game_mode) {
         case 0: // Easy
             game_frames = game_frames_easy;
             score_increment = score_increment_easy;
+            reduction_frame = reduction_frame_easy;
             break;
         case 1: // Normal
             game_frames = game_frames_normal;
             score_increment = score_increment_normal;
+            reduction_frame = reduction_frame_normal;
             break;
         case 2: // Hard
             game_frames = game_frames_hard;
             score_increment = score_increment_hard;
+            reduction_frame = reduction_frame_hard;
             break;
         default:
             game_frames = game_frames_easy; // Default to easy if invalid mode
             score_increment = score_increment_easy;
+            reduction_frame = reduction_frame_easy;
     }
 }
 
@@ -334,7 +342,7 @@ void run_game() {
     initrand(DIV_REG);
 
     int frame = 0;
-    int reduction_frame = 0;
+    int reduction_frame_count = 0;
 
     // Game loop
     while (1) {
@@ -350,8 +358,8 @@ void run_game() {
             // instantly, reducing input lag
             handle_input();
 
-            if (reduction_frame == 60) {
-                reduction_frame = 0;
+            if (reduction_frame == reduction_frame_count) {
+                reduction_frame_count = 0;
                 if (score > 0) {
                     score--;
                 }
