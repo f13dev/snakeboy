@@ -14,7 +14,7 @@
     SNAKEBOY - Snake for the GameBoy
     Author: Jim Valentine <jv@f13.dev>
     License: MIT
-    Version: 0.1.5
+    Version: 0.1.6
 
 */
 
@@ -38,6 +38,9 @@
 #define TILE_SNAKE_BODY     2
 #define TILE_FOOD           3
 #define TILE_BORDER         4
+#define TILE_LOCK           5 // Tile for locked scores
+#define TILE_SCORE          6 // Tile for score icon
+
 
 // Directions
 #define DIR_UP    0
@@ -87,15 +90,23 @@ HighScoresData save_data = {
     .checksum = 8008
 };
 
-UBYTE game_frames_easy = 13;
+//UBYTE game_frames_easy = 13;
+UBYTE game_frames_easy = 9; // Frame counter for game speed control
 UBYTE score_increment_easy = 5; // Score increment for easy mode
-UBYTE reduction_frame_easy = 120; // Frame reduction for easy mode
-UBYTE game_frames_normal = 9;
+//UBYTE reduction_frame_easy = 120; // Frame reduction for easy mode
+UBYTE reduction_frame_easy = 90; // Frame reduction for easy mode
+
+//UBYTE game_frames_normal = 9;
+UBYTE game_frames_normal = 6; // Frame counter for game speed control
 UBYTE score_increment_normal = 10; // Score increment for normal mode
-UBYTE reduction_frame_normal = 60; // Frame reduction for normal mode
-UBYTE game_frames_hard = 6;
+//UBYTE reduction_frame_normal = 60; // Frame reduction for normal mode
+UBYTE reduction_frame_normal = 45; // Frame reduction for normal mode
+
+//UBYTE game_frames_hard = 6;
+UBYTE game_frames_hard = 4; // Frame counter for game speed control
 UBYTE score_increment_hard = 15; // Score increment for hard mode
-UBYTE reduction_frame_hard = 40; // Frame reduction for hard mode
+//UBYTE reduction_frame_hard = 40; // Frame reduction for hard mode
+UBYTE reduction_frame_hard = 30; // Frame reduction for hard mode
 
 UBYTE game_frames = 6;     // Frame counter for game speed control
 UBYTE score_increment = 10; // Score increment when eating food
@@ -107,7 +118,8 @@ UBYTE snake_y[MAX_SNAKE_LENGTH]; // Y coordinates of snake segments
 UBYTE snake_length;              // Current length of the snake
 UBYTE snake_direction;           // Current direction of the snake
 UBYTE food_x, food_y;            // Food position
-UINT16 score;                    // Player's score
+int score;                    // Player's score
+int score_lock = 0;
 UBYTE  game_over_flag;           // Flag to indicate game over
 
 
@@ -139,13 +151,18 @@ const unsigned char border_tile[] = {
 
 // Tile 5: Lock icon (for locked scores)
 const unsigned char lock_tile[] = {
-    0x18,0x18,0x24,0x24,0x24,0x24,0x7e,0x7e,0x7e,0x7e,0x7e,0x7e,0x7e,0x7e,0x7e,0x7e
-}
+    0x00,0x00,0x18,0x18,0x24,0x24,0x24,0x24,0x7e,0x7e,0x7e,0x7e,0x7e,0x7e,0x00,0x00
+};
+
+// Tile 6: Score icon
+const unsigned char score_tile[] = {
+    0x00,0x00,0xff,0xff,0x7e,0x7e,0x7e,0x7e,0x3c,0x3c,0x18,0x18,0x7e,0x7e,0x00,0x00
+};
 
 const unsigned char score_str[] = "SCORE: %d"; // Format string for score display
 
 // --- Function Prototypes ---
-int check_if_high_score(UINT16 new_score);
+int check_if_high_score(int new_score);
 void clear_screen();
 void draw_food();
 void draw_game_area();
@@ -162,7 +179,7 @@ void run_game();
 void sort_high_scores();
 void store_save_data();
 void update_game();
-void update_high_scores(UINT16 new_score, const char *new_name);
+void update_high_scores(int new_score, const char *new_name);
 void update_score_display();
 void set_game_mode();
 void set_game_speed(UBYTE game_mode);
@@ -178,6 +195,8 @@ void main() {
     set_bkg_data(TILE_SNAKE_BODY, 1, snake_body_tile);
     set_bkg_data(TILE_FOOD, 1, food_tile);
     set_bkg_data(TILE_BORDER, 1, border_tile);
+    set_bkg_data(TILE_LOCK, 1, lock_tile); // Load lock tile
+    set_bkg_data(TILE_SCORE, 1, score_tile); // Load score tile
 
     // Set the background palette (all tiles use this)
     BGP_REG = 0xE4; // 11100100 -> Color 3,2,1,0 (Black, Dark Gray, Light Gray, White)
@@ -365,7 +384,7 @@ void run_game() {
 
             if (reduction_frame == reduction_frame_count) {
                 reduction_frame_count = 0;
-                if (score > 0) {
+                if (score > score_lock) {
                     score--;
                 }
             }
@@ -541,6 +560,8 @@ void update_game() {
 
     // 3. Food Collision
     if (snake_x[0] == food_x && snake_y[0] == food_y) {
+        score_lock = score;
+
         score += score_increment; // Increase score
 
         // Play a sound
@@ -677,11 +698,33 @@ void log_high_score() {
 }
 
 void update_score_display() {
-    gotoxy(0, 0); // Move cursor to (1,1) tile position
-    printf("SCORE: %u", score); // Print the score in the top left corner
+    UBYTE empty_tile_arr[] = {TILE_EMPTY}; // Temporary array for TILE_EMPTY
 
-    gotoxy(12, 0); // Move cursor to (13,1) tile position
-    printf("SNAKEBOY"); // Print the game title in the top right corner
+    set_bkg_data(TILE_SCORE, 1, score_tile); // Load score tile
+    UBYTE tile_score_arr[] = {TILE_SCORE}; // Temporary array for TILE_SCORE
+    set_bkg_tiles(1, 0, 1, 1, tile_score_arr); // Draw the score icon
+    gotoxy(3, 0); // Move cursor to (1,1) tile position
+    //printf("SCORE: "); // Print the score in the top left corner
+    printf("%u", score); // Print the score
+    if (score < 10) { set_bkg_tiles(4, 0, 1, 1, empty_tile_arr); }
+    if (score < 100) { set_bkg_tiles(5, 0, 1, 1, empty_tile_arr); }
+    if (score < 1000) { set_bkg_tiles(6, 0, 1, 1, empty_tile_arr); }
+
+    // Add a lock icon if the score is locked
+    set_bkg_data(TILE_LOCK, 1, lock_tile); // Load lock tile
+    UBYTE tile_lock_arr[] = {TILE_LOCK}; // Temporary array for TILE_SNAKE_HEAD
+    set_bkg_tiles(11, 0, 1, 1, tile_lock_arr); // Draw the lock icon
+
+    gotoxy(13, 0); // Move cursor to (14,1) tile position
+    //if (score_lock < 1000) { printf("0"); }
+    //if (score_lock < 100) { printf("0"); }
+    //if (score_lock < 10) { printf("0"); }
+    printf("%d", score_lock); // Print the score lock value
+    if (score_lock < 10) { set_bkg_tiles(14, 0, 1, 1, empty_tile_arr); }
+    if (score_lock < 100) { set_bkg_tiles(15, 0, 1, 1, empty_tile_arr); }
+    if (score_lock < 1000) { set_bkg_tiles(16, 0, 1, 1, empty_tile_arr); }
+    //gotoxy(12, 0); // Move cursor to (13,1) tile position
+    //printf("SNAKEBOY"); // Print the game title in the top right corner
 }
 
 void load_save_data() {
@@ -718,7 +761,7 @@ void store_save_data() {
     DISABLE_RAM_MBC5; // Disable RAM access for MBC5
 }
 
-void update_high_scores(UINT16 new_score, const char *new_name) {
+void update_high_scores(int new_score, const char *new_name) {
     // Set the last high score to the new one (the old one drops off)
     strncpy(save_data.scores[MAX_HIGHSCORES - 1].name, new_name, NAME_LENGTH);
     save_data.scores[MAX_HIGHSCORES - 1].name[NAME_LENGTH] = '\0'; // Ensure null termination
@@ -748,7 +791,7 @@ void sort_high_scores() {
     }
 }
 
-int check_if_high_score(UINT16 new_score) {
+int check_if_high_score(int new_score) {
     // High scores are sorted in descending order already
     if (new_score > save_data.scores[MAX_HIGHSCORES - 1].score) {
         return 1; // New score is a high score
